@@ -76,7 +76,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "LBR", pays: "Liberia", reseauAncien: "", reseauActuel: "Liberia Geodetic Reference frame (LGR)", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
 
-  { id: "LBY", pays: "Libya", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "LBY", pays: "Libya", reseauAncien: "", reseauActuel: "LGD2006(Libyan Geodetic Datum 2006)", itrf: "ITRF 2000", epoque: "2006.3822", status: "MANQUE_INFO" },
 
   { id: "MDG", pays: "Madagascar", reseauAncien: "", reseauActuel: "RGM65", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
 
@@ -96,7 +96,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "NER", pays: "Niger", reseauAncien: "", reseauActuel: "", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
 
-  { id: "NGA", pays: "Nigeria", reseauAncien: "NGD2012/ITRF2008.2012.0", reseauActuel: "NGD2022/NIGREF22 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
+  { id: "NGA", pays: "Nigeria", reseauAncien: "Datum MINNA", reseauActuel: "NGD2022/NIGREF22 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
 
   { id: "UGA", pays: "Uganda", reseauAncien: "(Arc 1960)", reseauActuel: "Uganda Geodetic Reference Framework - UGRF", itrf: "ITRF 2005", epoque: "2010", status: "COMPLET" },
 

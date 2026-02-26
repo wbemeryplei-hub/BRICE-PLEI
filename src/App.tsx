@@ -56,8 +56,26 @@ const AfricaMap = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [geoData, setGeoData] = useState<any>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observeTarget = containerRef.current;
+    if (!observeTarget) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setDimensions({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height
+        });
+      }
+    });
+
+    resizeObserver.observe(observeTarget);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
@@ -99,14 +117,14 @@ const AfricaMap = ({
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
+    const width = dimensions.width || svgRef.current.clientWidth;
+    const height = dimensions.height || svgRef.current.clientHeight;
 
-    // Fixed projection (no zoom/pan)
+    if (width === 0 || height === 0) return;
+
+    // Use fitSize to ensure the entire continent fits perfectly in the frame with padding
     const projection = d3.geoMercator()
-      .scale(width / 1.8) // Reduced scale to fit the whole continent
-      .center([18, 5])    // Adjusted center
-      .translate([width / 2, height / 2]);
+      .fitExtent([[10, 10], [width - 10, height - 10]], geoData);
 
     const path = d3.geoPath().projection(projection);
 
@@ -154,9 +172,9 @@ const AfricaMap = ({
         return `translate(${centroid[0]}, ${centroid[1]})`;
       })
       .attr('text-anchor', 'middle')
-      .attr('font-size', '8px')
-      .attr('font-weight', '600')
-      .attr('fill', '#334155')
+      .attr('font-size', width < 500 ? '6px' : '8px')
+      .attr('font-weight', '700')
+      .attr('fill', '#000000')
       .attr('pointer-events', 'none')
       .text((d: any) => {
         const country = data.find(c => c.id === d.id);
@@ -214,17 +232,17 @@ const AfricaMap = ({
       .attr('x', (d: any) => projection(d.coords as [number, number])![0])
       .attr('y', (d: any) => projection(d.coords as [number, number])![1] - 8)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '7px')
-      .attr('font-weight', '700')
-      .attr('fill', '#475569')
+      .attr('font-size', width < 500 ? '5px' : '7px')
+      .attr('font-weight', '800')
+      .attr('fill', '#000000')
       .text((d: any) => d.name);
 
-  }, [geoData, selectedCountryId, onCountryClick, data]);
+  }, [geoData, selectedCountryId, onCountryClick, data, dimensions]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
-      <div className="py-3 px-4 border-b border-slate-100 bg-slate-50/50 flex justify-center items-center">
-        <h2 className="text-[10px] md:text-xs font-black text-black uppercase tracking-[0.2em] text-center">
+      <div className="py-2 px-4 border-b border-slate-100 bg-slate-50/50 flex justify-center items-center">
+        <h2 className="text-[9px] sm:text-[11px] md:text-sm font-black text-slate-900 uppercase tracking-[0.2em] text-center">
           CARTOGRAPHY OF REFERENCE SYSTEMS IN AFRICA
         </h2>
       </div>
@@ -232,116 +250,118 @@ const AfricaMap = ({
       <div className="relative flex-1 overflow-hidden">
         <svg ref={svgRef} className="w-full h-full" />
         
-        {/* Draggable Statistical Summary Overlay */}
-      <motion.div 
-        drag
-        dragConstraints={containerRef}
-        dragMomentum={false}
-        className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[180px] cursor-move active:shadow-2xl transition-shadow"
-      >
-        <div className="font-bold mb-2 text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-1 flex items-center justify-between">
-          <span>Statistical Summary 📊</span>
-          <div className="flex flex-col gap-0.5">
-            <div className="w-3 h-0.5 bg-slate-300 rounded-full" />
-            <div className="w-3 h-0.5 bg-slate-300 rounded-full" />
+        {/* Draggable Statistical Summary Overlay - Always Visible */}
+        <motion.div 
+          drag
+          dragConstraints={containerRef}
+          dragMomentum={false}
+          className={cn(
+            "absolute z-20 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
+            dimensions.width < 640 ? "bottom-[140px] left-2" : "bottom-[160px] left-4 min-w-[150px]"
+          )}
+        >
+          <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1 flex items-center justify-between">
+            <span>Statistics 📊</span>
+            <div className="flex flex-col gap-0.5">
+              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
+              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
+            </div>
           </div>
-        </div>
-        <table className="w-full">
-          <thead>
-            <tr className="text-slate-400 text-left">
-              <th className="font-black uppercase pb-1">Status</th>
-              <th className="font-black uppercase pb-1 text-right">Qty</th>
-              <th className="font-black uppercase pb-1 text-right">%</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {[
-              { label: 'Complete', status: 'COMPLET', color: 'bg-[#93c5fd]' },
-              { label: 'No Epoch', status: 'SANS_EPOQUE', color: 'bg-[#fde047]' },
-              { label: 'Missing', status: 'MANQUE_INFO', color: 'bg-[#fca5a5]' },
-              { label: 'Local', status: 'CANEVA_LOCAL', color: 'bg-[#c084fc]' }
-            ].map((item) => {
-              const count = data.filter(c => c.status === item.status).length;
-              const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : 0;
-              return (
-                <tr key={item.status} className="group">
-                  <td className="py-1 flex items-center gap-1.5">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", item.color)} />
-                    <span className="font-medium">{item.label}</span>
-                  </td>
-                  <td className="py-1 text-right font-mono font-bold text-slate-900">{count}</td>
-                  <td className="py-1 text-right font-mono text-slate-500">{percentage}%</td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-slate-200 mt-1">
-              <td className="pt-1 font-bold text-indigo-600 uppercase">Total</td>
-              <td className="pt-1 text-right font-mono font-black text-indigo-600">{data.length}</td>
-              <td className="pt-1 text-right font-mono text-indigo-600">100%</td>
-            </tr>
-          </tfoot>
-        </table>
-      </motion.div>
+          <table className="w-full">
+            <thead>
+              <tr className="text-slate-400 text-left">
+                <th className="font-black uppercase pb-1">Status</th>
+                <th className="font-black uppercase pb-1 text-right">Qty</th>
+                <th className="font-black uppercase pb-1 text-right">%</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {[
+                { label: 'Complete', status: 'COMPLET', color: 'bg-[#93c5fd]' },
+                { label: 'No Epoch', status: 'SANS_EPOQUE', color: 'bg-[#fde047]' },
+                { label: 'Missing', status: 'MANQUE_INFO', color: 'bg-[#fca5a5]' },
+                { label: 'Local', status: 'CANEVA_LOCAL', color: 'bg-[#c084fc]' }
+              ].map((item) => {
+                const count = data.filter(c => c.status === item.status).length;
+                const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : 0;
+                return (
+                  <tr key={item.status} className="group">
+                    <td className="py-0.5 flex items-center gap-1">
+                      <div className={cn("w-1 h-1 rounded-full", item.color)} />
+                      <span className="font-medium">{item.label}</span>
+                    </td>
+                    <td className="py-0.5 text-right font-mono font-bold text-slate-900">{count}</td>
+                    <td className="py-0.5 text-right font-mono text-slate-500">{percentage}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </motion.div>
 
-      {/* Draggable Legend Overlay */}
-      <motion.div 
-        drag
-        dragConstraints={containerRef}
-        dragMomentum={false}
-        className="absolute bottom-[190px] left-4 z-20 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-xs text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow"
-      >
-        <div className="font-bold mb-1 text-slate-900 uppercase tracking-wider flex items-center justify-between">
-          <span>Legend 🗺️</span>
-          <div className="flex flex-col gap-0.5">
-            <div className="w-3 h-0.5 bg-slate-300 rounded-full" />
-            <div className="w-3 h-0.5 bg-slate-300 rounded-full" />
+        {/* Draggable Legend Overlay - Always Visible, Fixed Bottom Left */}
+        <motion.div 
+          drag
+          dragConstraints={containerRef}
+          dragMomentum={false}
+          className={cn(
+            "absolute z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
+            dimensions.width < 640 ? "bottom-2 left-2" : "bottom-4 left-4"
+          )}
+        >
+          <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider flex items-center justify-between">
+            <span>Legend 🗺️</span>
+            <div className="flex flex-col gap-0.5">
+              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
+              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#93c5fd] border border-blue-400" />
-          <span>ITRF with Epoch ✅</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#fde047] border border-yellow-400" />
-          <span>ITRF without Epoch ⚠️</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#fca5a5] border border-red-400" />
-          <span>Missing Information ❌</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#c084fc] border border-purple-400" />
-          <span>Local Network 📍</span>
-        </div>
-      </motion.div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#93c5fd] border border-blue-400" />
+            <span>ITRF with Epoch ✅</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#fde047] border border-yellow-400" />
+            <span>ITRF without Epoch ⚠️</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#fca5a5] border border-red-400" />
+            <span>Missing Information ❌</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#c084fc] border border-purple-400" />
+            <span>Local Network 📍</span>
+          </div>
+        </motion.div>
 
-      {/* Draggable Credits Overlay */}
-      <motion.div 
-        drag
-        dragConstraints={containerRef}
-        dragMomentum={false}
-        className="absolute bottom-4 right-4 z-20 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow"
-      >
-        <div className="font-bold mb-1 text-slate-900 uppercase tracking-wider flex items-center justify-between gap-4">
-          <span>Realized and produced by:</span>
-          <div className="flex flex-col gap-0.5">
-            <div className="w-3 h-0.5 bg-slate-300 rounded-full" />
-            <div className="w-3 h-0.5 bg-slate-300 rounded-full" />
+        {/* Draggable Credits Overlay - Always Visible, Fixed Bottom Right */}
+        <motion.div 
+          drag
+          dragConstraints={containerRef}
+          dragMomentum={false}
+          className={cn(
+            "absolute z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[9px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
+            dimensions.width < 640 ? "bottom-2 right-2" : "bottom-4 right-4"
+          )}
+        >
+          <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-2">
+            <span>Authors ✍️</span>
+            <div className="flex flex-col gap-0.5">
+              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
+              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
+            </div>
           </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <User size={12} className="text-indigo-600" />
-            <span className="font-bold text-slate-900">Wonbleon Brice Emery PLEI</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <User size={10} className="text-indigo-600" />
+              <span className="font-bold text-slate-900">W. B. E. PLEI</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <User size={10} className="text-indigo-600" />
+              <span className="font-bold text-slate-900">E. H. A. A. SALL</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <User size={12} className="text-indigo-600" />
-            <span className="font-bold text-slate-900">El Hadji Abdoul Aziz SALL</span>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
       </div>
     </div>
   );
@@ -476,14 +496,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans selection:bg-blue-100">
       {/* Header */}
-      <header className="border-b border-slate-100 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div id="authors-section">
+      <header className="border-b border-slate-100 bg-white/90 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+              <div id="authors-section" className="text-center lg:text-left">
               <motion.h1 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-xl md:text-2xl font-black tracking-tight text-black uppercase"
+                className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-black uppercase leading-tight"
               >
                 PRT M2 - DYNAMICS OF GEODETIC REFERENCE FRAMES IN AFRICA
               </motion.h1>
@@ -491,30 +511,30 @@ export default function App() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="flex flex-col mt-2"
+                className="flex flex-col mt-2 items-center lg:items-start"
               >
-                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-1">AUTHORS</span>
-                <div className="flex flex-wrap items-center gap-4 text-slate-600 text-sm">
+                <span className="text-[9px] sm:text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-1 text-center lg:text-left">AUTHORS</span>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 text-slate-600 text-xs sm:text-sm">
                   <div className="flex items-center gap-1.5">
-                    <User size={14} className="text-indigo-600" />
+                    <User size={12} className="text-indigo-600 sm:w-3.5 sm:h-3.5" />
                     <span>Wonbleon Brice Emery PLEI</span>
                   </div>
-                  <div className="w-1 h-1 rounded-full bg-slate-300" />
+                  <div className="hidden sm:block w-1 h-1 rounded-full bg-slate-300" />
                   <div className="flex items-center gap-1.5">
-                    <User size={14} className="text-indigo-600" />
+                    <User size={12} className="text-indigo-600 sm:w-3.5 sm:h-3.5" />
                     <span>El Hadji Abdoul Aziz SALL</span>
                   </div>
                 </div>
               </motion.div>
             </div>
             
-            <div className="flex flex-col items-end gap-3">
-              <div className="text-center w-full md:w-auto">
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em]">
+            <div className="flex flex-col items-center lg:items-end gap-3">
+              <div className="text-center w-full lg:w-auto">
+                <span className="text-[9px] sm:text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] bg-slate-50 px-3 py-1 rounded-full border border-slate-100 block lg:inline-block">
                   UNIVERSITÉ IBA DER THIAM DE THIÈS (UFR-SI)
                 </span>
               </div>
-              <nav className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <nav className="flex flex-wrap justify-center bg-slate-100 p-1 rounded-xl border border-slate-200 w-full lg:w-auto">
               <button 
                 onClick={() => setActiveTab('map')}
                 className={cn(
@@ -604,7 +624,7 @@ export default function App() {
       </div>
     </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <AnimatePresence mode="wait">
           {activeTab === 'map' && (
             <motion.div 
@@ -612,17 +632,19 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-200px)] min-h-[750px]"
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 lg:h-[calc(100vh-180px)]"
             >
               {/* Map Section */}
-              <div className="lg:col-span-2 flex flex-col gap-4">
-                <div className="flex justify-end">
+              <div className="lg:col-span-2 flex flex-col gap-4 h-[500px] sm:h-[600px] lg:h-full">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider lg:hidden">Interactive Map</h3>
                   <button 
                     onClick={exportMapAsImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 ml-auto"
                   >
-                    <Download size={16} />
-                    Export Map Image (PNG)
+                    <Download size={14} className="sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Export Map Image (PNG)</span>
+                    <span className="sm:hidden">Export</span>
                   </button>
                 </div>
                 <div className="relative flex-1" ref={mapContainerRef}>
@@ -639,8 +661,8 @@ export default function App() {
 
               {/* Info Panel */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                     <Info size={18} className="text-indigo-600" />
                     Country Details 📋
                   </h2>
@@ -654,16 +676,16 @@ export default function App() {
                   )}
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                   {selectedCountry ? (
                     <motion.div 
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="space-y-6"
+                      className="space-y-4 sm:space-y-6"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
                         <div className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm",
+                          "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-sm",
                           selectedCountry.status === 'COMPLET' ? "bg-blue-50 text-blue-600" :
                           selectedCountry.status === 'SANS_EPOQUE' ? "bg-yellow-50 text-yellow-600" :
                           selectedCountry.status === 'MANQUE_INFO' ? "bg-red-50 text-red-600" :
@@ -673,7 +695,7 @@ export default function App() {
                           <Globe size={24} />
                         </div>
                         <div>
-                          <h3 className="text-2xl font-black text-slate-900">{selectedCountry.pays}</h3>
+                          <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{selectedCountry.pays}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={cn(
                               "text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full",
