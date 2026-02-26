@@ -54,7 +54,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "ERI", pays: "Eritrea", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
 
-  { id: "SWZ", pays: "Eswatini", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "SWZ", pays: "Eswatini", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
   { id: "ETH", pays: "Ethiopia", reseauAncien: "", reseauActuel: "National Geodetic Network", itrf: "ITRF 2005", epoque: "2000", status: "COMPLET" },
 
@@ -72,7 +72,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "KEN", pays: "Kenya", reseauAncien: "Kenya Absolute Reference System KARS96", reseauActuel: "KENREF (Kenya Geodetic Reference Frame)", itrf: "ITRF 2014", epoque: "2015", status: "COMPLET" },
 
-  { id: "LSO", pays: "Lesotho", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "LSO", pays: "Lesotho", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
   { id: "LBR", pays: "Liberia", reseauAncien: "", reseauActuel: "Liberia Geodetic Reference frame (LGR)", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
 
