@@ -44,7 +44,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "COM", pays: "Comoros", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
-  { id: "COG", pays: "Congo-Brazzaville", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "COG", pays: "Congo-Brazzaville", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
   { id: "CIV", pays: "Ivory Coast", reseauAncien: "RGCI ITRF 1996@1998.2", reseauActuel: "RGCI 2022", itrf: "ITRF 2014", epoque: "2010", status: "COMPLET" },
 
@@ -52,7 +52,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "EGY", pays: "Egypt", reseauAncien: "EGN 80", reseauActuel: "NED95 (National Egyptian Datum 1995)", itrf: "ITRF 1993", epoque: "1998.1", status: "COMPLET" },
 
-  { id: "ERI", pays: "Eritrea", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "ERI", pays: "Eritrea", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
   { id: "SWZ", pays: "Eswatini", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
