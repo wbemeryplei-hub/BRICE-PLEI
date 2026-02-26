@@ -23,499 +23,115 @@ export interface TableHeaders {
 }
 
 export const AFRICA_DATA: CountryData[] = [
-  {
-    id: "ZAF",
-    pays: "South Africa",
-    reseauAncien: "Cape Datum",
-    reseauActuel: "Hartebeesthoek94 Datum",
-    itrf: "ITRF91",
-    epoque: "1994",
-    status: "COMPLET"
-  },
-  {
-    id: "DZA",
-    pays: "Algeria",
-    reseauAncien: "North Sahara Geodetic System 1959",
-    reseauActuel: "Atlas Geodetic Network (REGAT)",
-    itrf: "ITRF 2014",
-    epoque: "2010",
-    status: "COMPLET"
-  },
-  {
-    id: "AGO",
-    pays: "Angola",
-    reseauAncien: "",
-    reseauActuel: "(RGNA) (or Active National Geodetic Network)",
-    itrf: "ITRF2008",
-    epoque: "2010",
-    status: "COMPLET"
-  },
-  {
-    id: "BEN",
-    pays: "Benin",
-    reseauAncien: "RGB ITRF 1993 @95.9",
-    reseauActuel: "RSPB CORS",
-    itrf: "ITRF 2000",
-    epoque: "1997",
-    status: "COMPLET"
-  },
-  {
-    id: "BWA",
-    pays: "Botswana",
-    reseauAncien: "BTRS (Botswana Terrestrial Reference Sys",
-    reseauActuel: "BNGRS02 (Botswana National Geodetic Reference System 2002)",
-    itrf: "ITRF 2000",
-    epoque: "2002",
-    status: "COMPLET"
-  },
-  {
-    id: "BFA",
-    pays: "Burkina Faso",
-    reseauAncien: "adindan point 58/network 1/network 2",
-    reseauActuel: "BF-CORS (13)",
-    itrf: "ITRF 2008",
-    epoque: "2011.7205",
-    status: "COMPLET"
-  },
-  {
-    id: "BDI",
-    pays: "Burundi",
-    reseauAncien: "Arc 1960",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "CMR",
-    pays: "Cameroon",
-    reseauAncien: "",
-    reseauActuel: "National Geodetic Network (RGC11)",
-    itrf: "ITRF 2008",
-    epoque: "2011.5",
-    status: "COMPLET"
-  },
-  {
-    id: "CPV",
-    pays: "Cape Verde",
-    reseauAncien: "CVRS96 ITRF 1996",
-    reseauActuel: "Fundamental Geodetic Network of Cape Verde (RGFCV)",
-    itrf: "ITRF 1996",
-    epoque: "1996",
-    status: "COMPLET"
-  },
-  {
-    id: "COM",
-    pays: "Comoros",
-    reseauAncien: "Comoros Datum",
-    reseauActuel: "Comoros CORS Network",
-    itrf: "ITRF 2008",
-    epoque: "2010",
-    status: "COMPLET"
-  },
-  {
-    id: "COG",
-    pays: "Congo-Brazzaville",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "CIV",
-    pays: "Ivory Coast",
-    reseauAncien: "RGCI ITRF 1996@1998.2",
-    reseauActuel: "",
-    itrf: "ITRF 2014",
-    epoque: "2010",
-    status: "COMPLET"
-  },
-  {
-    id: "DJI",
-    pays: "Djibouti",
-    reseauAncien: "Ghoubbet-Asal (IGN 1973)",
-    reseauActuel: "Djibouti Geodetic Network",
-    itrf: "ITRF 2005",
-    epoque: "2012.27",
-    status: "COMPLET"
-  },
-  {
-    id: "EGY",
-    pays: "Egypt",
-    reseauAncien: "EGN 80",
-    reseauActuel: "NED95 (National Egyptian Datum 1995)",
-    itrf: "ITRF1993",
-    epoque: "1998.1",
-    status: "COMPLET"
-  },
-  {
-    id: "ERI",
-    pays: "Eritrea",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "SWZ",
-    pays: "Eswatini",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "SANS_EPOQUE"
-  },
-  {
-    id: "ETH",
-    pays: "Ethiopia",
-    reseauAncien: "",
-    reseauActuel: "National Geodetic Network",
-    itrf: "ITRF 2005",
-    epoque: "2000",
-    status: "COMPLET"
-  },
-  {
-    id: "GAB",
-    pays: "Gabon",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "CANEVA_LOCAL"
-  },
-  {
-    id: "GMB",
-    pays: "Gambia",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "GHA",
-    pays: "Ghana",
-    reseauAncien: "Accra Datum (1926)",
-    reseauActuel: "Ghana National GNSS Reference Network (GHGNSS)",
-    itrf: "ITRF 2014 ITRF05",
-    epoque: "2010.0 2007.39",
-    status: "COMPLET"
-  },
-  {
-    id: "GIN",
-    pays: "Guinea",
-    reseauAncien: "Conakry Datum (1905)",
-    reseauActuel: "",
-    itrf: "ITRF 2014 / ITRF2008",
-    epoque: "2010.0/2011.0",
-    status: "COMPLET"
-  },
-  {
-    id: "GNQ",
-    pays: "Equatorial Guinea",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "CANEVA_LOCAL"
-  },
-  {
-    id: "GNB",
-    pays: "Guinea-Bissau",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "KEN",
-    pays: "Kenya",
-    reseauAncien: "Kenya Absolute Reference System KARS96",
-    reseauActuel: "ITRF96@1996",
-    itrf: "ITRF2014",
-    epoque: "2015",
-    status: "COMPLET"
-  },
-  {
-    id: "LSO",
-    pays: "Lesotho",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "SANS_EPOQUE"
-  },
-  {
-    id: "LBR",
-    pays: "Liberia",
-    reseauAncien: "",
-    reseauActuel: "Liberia Geodetic Reference frame (LGR)",
-    itrf: "ITRF",
-    epoque: "",
-    status: "SANS_EPOQUE"
-  },
-  {
-    id: "LBY",
-    pays: "Libya",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "MDG",
-    pays: "Madagascar",
-    reseauAncien: "",
-    reseauActuel: "RGM65",
-    itrf: "",
-    epoque: "",
-    status: "SANS_EPOQUE"
-  },
-  {
-    id: "MWI",
-    pays: "Malawi",
-    reseauAncien: "",
-    reseauActuel: "MGRF2003",
-    itrf: "ITRF 2008",
-    epoque: "2003",
-    status: "COMPLET"
-  },
-  {
-    id: "MLI",
-    pays: "Mali",
-    reseauAncien: "",
-    reseauActuel: "Mali Geodetic Network is the Mali Reference Geodetic Network (RGRM)",
-    itrf: "ITRF",
-    epoque: "",
-    status: "SANS_EPOQUE"
-  },
-  {
-    id: "MAR",
-    pays: "Morocco",
-    reseauAncien: "Merchich Datum",
-    reseauActuel: "RFM",
-    itrf: "ITRF 2005",
-    epoque: "2005",
-    status: "COMPLET"
-  },
-  {
-    id: "MUS",
-    pays: "Mauritius",
-    reseauAncien: "Mauritius Geodetic Datum 1994",
-    reseauActuel: "MGD2014 (Mauritius Geodetic Datum 2014)",
-    itrf: "ITRF 2008",
-    epoque: "2014",
-    status: "COMPLET"
-  },
-  {
-    id: "MRT",
-    pays: "Mauritania",
-    reseauAncien: "",
-    reseauActuel: "(RGM 2020)",
-    itrf: "ITRF2020",
-    epoque: "2015",
-    status: "COMPLET"
-  },
-  {
-    id: "MOZ",
-    pays: "Mozambique",
-    reseauAncien: "ITRF94",
-    reseauActuel: "MOZNET",
-    itrf: "ITRF2000",
-    epoque: "1997",
-    status: "COMPLET"
-  },
-  {
-    id: "NAM",
-    pays: "Namibia",
-    reseauAncien: "Schwarzeck datum",
-    reseauActuel: "",
-    itrf: "ITRF 2000/2008",
-    epoque: "2005",
-    status: "COMPLET"
-  },
-  {
-    id: "NER",
-    pays: "Niger",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "CANEVA_LOCAL"
-  },
-  {
-    id: "NGA",
-    pays: "Nigeria",
-    reseauAncien: "NGD2012/ITRF2008.2012.0",
-    reseauActuel: "NGD2022/NIGREF22 (Nigerian Geodetic Datum)",
-    itrf: "ITRF2020",
-    epoque: "2015",
-    status: "COMPLET"
-  },
-  {
-    id: "UGA",
-    pays: "Uganda",
-    reseauAncien: "(Arc 1960)",
-    reseauActuel: "Uganda Geodetic Reference Framework - UGRF",
-    itrf: "ITRF 2005",
-    epoque: "2010",
-    status: "COMPLET"
-  },
-  {
-    id: "COD",
-    pays: "DRC",
-    reseauAncien: "",
-    reseauActuel: "southern tier",
-    itrf: "ITRF 2005",
-    epoque: "2000",
-    status: "COMPLET"
-  },
-  {
-    id: "CAF",
-    pays: "Central African Republic",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "RWA",
-    pays: "Rwanda",
-    reseauAncien: "",
-    reseauActuel: "RGN (Rwanda Geodetic Network)",
-    itrf: "ITRF 2014",
-    epoque: "2000",
-    status: "COMPLET"
-  },
-  {
-    id: "ESH",
-    pays: "Western Sahara",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "STP",
-    pays: "Sao Tome and Principe",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "SEN",
-    pays: "Senegal",
-    reseauAncien: "ASECNA ITRF 1996@98.5",
-    reseauActuel: "RRS04",
-    itrf: "ITRF2000",
-    epoque: "2004.56",
-    status: "COMPLET"
-  },
-  {
-    id: "SYC",
-    pays: "Seychelles",
-    reseauAncien: "Seychelles Geodetic Datum 1980",
-    reseauActuel: "Seychelles CORS Network",
-    itrf: "ITRF 2008",
-    epoque: "2005",
-    status: "COMPLET"
-  },
-  {
-    id: "SLE",
-    pays: "Sierra Leone",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "SOM",
-    pays: "Somalia",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "SDN",
-    pays: "Sudan",
-    reseauAncien: "",
-    reseauActuel: "SRGGS (Sudan Reference GNSS System )",
-    itrf: "ITRF 2008",
-    epoque: "2008",
-    status: "COMPLET"
-  },
-  {
-    id: "SSD",
-    pays: "South Sudan",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "TZA",
-    pays: "Tanzania",
-    reseauAncien: "",
-    reseauActuel: "TAREF 11 (Tanzania Reference Frame 2011)",
-    itrf: "ITRF 2012",
-    epoque: "2008.93",
-    status: "COMPLET"
-  },
-  {
-    id: "TCD",
-    pays: "Chad",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "",
-    epoque: "",
-    status: "MANQUE_INFO"
-  },
-  {
-    id: "TGO",
-    pays: "Togo",
-    reseauAncien: "",
-    reseauActuel: "",
-    itrf: "ITRF 2014",
-    epoque: "2010",
-    status: "COMPLET"
-  },
-  {
-    id: "TUN",
-    pays: "Tunisia",
-    reseauAncien: "CARTHAGE 1988",
-    reseauActuel: "NTT (New Tunisian Triangulation)",
-    itrf: "ITRF 2000",
-    epoque: "2000",
-    status: "COMPLET"
-  },
-  {
-    id: "ZMB",
-    pays: "Zambia",
-    reseauAncien: "",
-    reseauActuel: "Zambia Main Network",
-    itrf: "ITRF 2000",
-    epoque: "2005",
-    status: "COMPLET"
-  },
-  {
-    id: "ZWE",
-    pays: "Zimbabwe",
-    reseauAncien: "",
-    reseauActuel: "ZINGSA",
-    itrf: "ITRF 2000",
-    epoque: "",
-    status: "SANS_EPOQUE"
-  }
+
+  { id: "ZAF", pays: "South Africa", reseauAncien: "Cape Datum", reseauActuel: "Hartebeesthoek94 Datum", itrf: "ITRF 2014", epoque: "2018.18", status: "COMPLET" },
+
+  { id: "DZA", pays: "Algeria", reseauAncien: "North Sahara Geodetic System 1959", reseauActuel: "Atlas Geodetic Network (REGAT)", itrf: "ITRF 2014", epoque: "2010", status: "COMPLET" },
+
+  { id: "AGO", pays: "Angola", reseauAncien: "", reseauActuel: "(RGNA) (or Active National Geodetic Network)", itrf: "ITRF 2008", epoque: "2010", status: "COMPLET" },
+
+  { id: "BEN", pays: "Benin", reseauAncien: "RGB ITRF 1993 @95.9", reseauActuel: "RSPB CORS", itrf: "ITRF 2000", epoque: "1997", status: "COMPLET" },
+
+  { id: "BWA", pays: "Botswana", reseauAncien: "BTRS (Botswana Terrestrial Reference Sys", reseauActuel: "BNGRS02 (Botswana National Geodetic Reference System 2002)", itrf: "ITRF 2000", epoque: "2002", status: "COMPLET" },
+
+  { id: "BFA", pays: "Burkina Faso", reseauAncien: "adindan point 58/network 1/network 2", reseauActuel: "BF-CORS", itrf: "ITRF 2008", epoque: "2011.7205", status: "COMPLET" },
+
+  { id: "BDI", pays: "Burundi", reseauAncien: "Arc 1960", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "CMR", pays: "Cameroon", reseauAncien: "", reseauActuel: "National Geodetic Network (RGC11)", itrf: "ITRF 2008", epoque: "2011.5", status: "COMPLET" },
+
+  { id: "CPV", pays: "Cape Verde", reseauAncien: "CVRS96 ITRF 1996", reseauActuel: "Fundamental Geodetic Network of Cape Verde (RGFCV)", itrf: "ITRF 1996", epoque: "1996", status: "COMPLET" },
+
+  { id: "COM", pays: "Comoros", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "COG", pays: "Congo-Brazzaville", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "CIV", pays: "Ivory Coast", reseauAncien: "RGCI ITRF 1996@1998.2", reseauActuel: "RGCI 2022", itrf: "ITRF 2014", epoque: "2010", status: "COMPLET" },
+
+  { id: "DJI", pays: "Djibouti", reseauAncien: "Ghoubbet-Asal (IGN 1973)", reseauActuel: "Djibouti Geodetic Network", itrf: "ITRF 2005", epoque: "2012.27", status: "COMPLET" },
+
+  { id: "EGY", pays: "Egypt", reseauAncien: "EGN 80", reseauActuel: "NED95 (National Egyptian Datum 1995)", itrf: "ITRF 1993", epoque: "1998.1", status: "COMPLET" },
+
+  { id: "ERI", pays: "Eritrea", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "SWZ", pays: "Eswatini", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "ETH", pays: "Ethiopia", reseauAncien: "", reseauActuel: "National Geodetic Network", itrf: "ITRF 2005", epoque: "2000", status: "COMPLET" },
+
+  { id: "GAB", pays: "Gabon", reseauAncien: "", reseauActuel: "", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
+
+  { id: "GMB", pays: "Gambia", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "GHA", pays: "Ghana", reseauAncien: "Accra Datum (1926)", reseauActuel: "Geodetic Reference Network (GRN)", itrf: "ITRF 2005", epoque: "2007.39", status: "COMPLET" },
+
+  { id: "GIN", pays: "Guinea", reseauAncien: "Conakry Datum (1905)", reseauActuel: "Réseau géodésique de Conakry", itrf: "ITRF 2008", epoque: "2011", status: "COMPLET" },
+
+  { id: "GNQ", pays: "Equatorial Guinea", reseauAncien: "", reseauActuel: "", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
+
+  { id: "GNB", pays: "Guinea-Bissau", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "KEN", pays: "Kenya", reseauAncien: "Kenya Absolute Reference System KARS96", reseauActuel: "KENREF (Kenya Geodetic Reference Frame)", itrf: "ITRF 2014", epoque: "2015", status: "COMPLET" },
+
+  { id: "LSO", pays: "Lesotho", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "LBR", pays: "Liberia", reseauAncien: "", reseauActuel: "Liberia Geodetic Reference frame (LGR)", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
+
+  { id: "LBY", pays: "Libya", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "MDG", pays: "Madagascar", reseauAncien: "", reseauActuel: "RGM65", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
+
+  { id: "MWI", pays: "Malawi", reseauAncien: "", reseauActuel: "MGRF2005", itrf: "ITRF 2008", epoque: "2005.0", status: "COMPLET" },
+
+  { id: "MLI", pays: "Mali", reseauAncien: "", reseauActuel: "Mali Reference Geodetic Network (RGRM)", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
+
+  { id: "MAR", pays: "Morocco", reseauAncien: "Merchich Datum", reseauActuel: "RFM", itrf: "ITRF 2000", epoque: "2005.0", status: "COMPLET" },
+
+  { id: "MUS", pays: "Mauritius", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "MRT", pays: "Mauritania", reseauAncien: "", reseauActuel: "(RGM 2020)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
+
+  { id: "MOZ", pays: "Mozambique", reseauAncien: "ITRF94", reseauActuel: "MOZNET", itrf: "ITRF 2000", epoque: "1997", status: "COMPLET" },
+
+  { id: "NAM", pays: "Namibia", reseauAncien: "Schwarzeck datum", reseauActuel: "", itrf: "ITRF 2000/2008", epoque: "2005", status: "COMPLET" },
+
+  { id: "NER", pays: "Niger", reseauAncien: "", reseauActuel: "", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
+
+  { id: "NGA", pays: "Nigeria", reseauAncien: "NGD2012/ITRF2008.2012.0", reseauActuel: "NGD2022/NIGREF22 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
+
+  { id: "UGA", pays: "Uganda", reseauAncien: "(Arc 1960)", reseauActuel: "Uganda Geodetic Reference Framework - UGRF", itrf: "ITRF 2005", epoque: "2010", status: "COMPLET" },
+
+  { id: "COD", pays: "DRC", reseauAncien: "", reseauActuel: "southern tier", itrf: "ITRF 2005", epoque: "2000", status: "COMPLET" },
+
+  { id: "CAF", pays: "Central African Republic", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "RWA", pays: "Rwanda", reseauAncien: "", reseauActuel: "RGN (Rwanda Geodetic Network)", itrf: "ITRF 2014", epoque: "2000", status: "COMPLET" },
+
+  { id: "ESH", pays: "Western Sahara", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "STP", pays: "Sao Tome and Principe", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "SEN", pays: "Senegal", reseauAncien: "ASECNA ITRF 1996@98.5", reseauActuel: "RRS04", itrf: "ITRF 2000", epoque: "2004.56", status: "COMPLET" },
+
+  { id: "SYC", pays: "Seychelles", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "SLE", pays: "Sierra Leone", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "SOM", pays: "Somalia", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "SDN", pays: "Sudan", reseauAncien: "", reseauActuel: "SRGGS (Sudan Reference GNSS System )", itrf: "ITRF 2008", epoque: "2008", status: "COMPLET" },
+
+  { id: "SSD", pays: "South Sudan", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "TZA", pays: "Tanzania", reseauAncien: "", reseauActuel: "TAREF 11 (Tanzania Reference Frame 2011)", itrf: "ITRF 2014", epoque: "2011.0", status: "COMPLET" },
+
+  { id: "TCD", pays: "Chad", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+
+  { id: "TGO", pays: "Togo", reseauAncien: "", reseauActuel: "", itrf: "ITRF 2014", epoque: "2010", status: "COMPLET" },
+
+  { id: "TUN", pays: "Tunisia", reseauAncien: "CARTHAGE 1988", reseauActuel: "NTT (New Tunisian Triangulation)", itrf: "ITRF 2000", epoque: "2000", status: "COMPLET" },
+
+  { id: "ZMB", pays: "Zambia", reseauAncien: "", reseauActuel: "Zambia Main Network", itrf: "ITRF 2000", epoque: "2005", status: "COMPLET" },
+
+  { id: "ZWE", pays: "Zimbabwe", reseauAncien: "", reseauActuel: "ZINGSA", itrf: "ITRF 2000", epoque: "", status: "MANQUE_INFO" }
+
 ];

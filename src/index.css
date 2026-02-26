@@ -4,3 +4,12 @@
 @theme {
   --font-serif: "Playfair Display", serif;
 }
+
+@keyframes blink-red {
+  0%, 100% { opacity: 1; }
+  50% { fill: #ef4444 !important; opacity: 0.8; }
+}
+
+.animate-blink-red {
+  animation: blink-red 0.8s infinite;
+}

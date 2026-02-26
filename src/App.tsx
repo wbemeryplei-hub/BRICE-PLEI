@@ -16,6 +16,7 @@ import {
   Globe,
   X,
   ChevronRight,
+  ChevronDown,
   Filter,
   Download,
   Plus,
@@ -23,7 +24,8 @@ import {
   Trash2,
   Save,
   RotateCcw,
-  Settings
+  Settings,
+  ExternalLink
 } from 'lucide-react';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
 import { clsx, type ClassValue } from 'clsx';
@@ -120,7 +122,7 @@ const AfricaMap = ({
         const isSelected = selectedCountryId === d.id;
         return cn(
           'transition-all duration-300 cursor-pointer stroke-white hover:stroke-slate-400',
-          isSelected ? 'stroke-slate-600 stroke-2' : 'stroke-1'
+          isSelected ? 'stroke-slate-600 stroke-2 animate-blink-red' : 'stroke-1'
         );
       })
       .attr('fill', (d: any) => {
@@ -201,7 +203,12 @@ const AfricaMap = ({
       })
       .attr('stroke', '#fff')
       .attr('stroke-width', 1.5)
-      .attr('class', (d: any) => selectedCountryId === d.id ? 'stroke-slate-600 stroke-2' : '');
+      .attr('class', (d: any) => {
+        const isSelected = selectedCountryId === d.id;
+        return cn(
+          isSelected ? 'stroke-slate-600 stroke-2 animate-blink-red' : ''
+        );
+      });
 
     islandMarkers.append('text')
       .attr('x', (d: any) => projection(d.coords as [number, number])![0])
@@ -230,7 +237,7 @@ const AfricaMap = ({
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
-        className="absolute bottom-[190px] left-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[180px] cursor-move active:shadow-2xl transition-shadow"
+        className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[180px] cursor-move active:shadow-2xl transition-shadow"
       >
         <div className="font-bold mb-2 text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-1 flex items-center justify-between">
           <span>Statistical Summary 📊</span>
@@ -283,7 +290,7 @@ const AfricaMap = ({
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
-        className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-xs text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow"
+        className="absolute bottom-[190px] left-4 z-20 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 text-xs text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow"
       >
         <div className="font-bold mb-1 text-slate-900 uppercase tracking-wider flex items-center justify-between">
           <span>Legend 🗺️</span>
@@ -371,20 +378,10 @@ export default function App() {
     // No longer needed as title is hardcoded
   }, []);
 
-  const resetToDefaults = () => {
-    if (window.confirm("Are you sure you want to reset all data to defaults? This will overwrite your changes.")) {
-      setCountries(AFRICA_DATA);
-      setHeaders({
-        country: 'Country 🌍',
-        formerNetwork: 'Former Network 🏛️',
-        currentNetwork: 'Current Network 📡',
-        itrf: 'ITRF 📐',
-        epoch: 'Epoch ⏱️',
-        status: 'Status 🏷️'
-      });
-      localStorage.removeItem('geodetic_data');
-      localStorage.removeItem('table_headers');
-    }
+  const handleSaveAll = () => {
+    localStorage.setItem('geodetic_data', JSON.stringify(countries));
+    localStorage.setItem('table_headers', JSON.stringify(headers));
+    alert("Toutes les modifications ont été enregistrées avec succès !");
   };
 
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
@@ -392,6 +389,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'map' | 'table' | 'sources'>('map');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
+  const [isChatSourcesOpen, setIsChatSourcesOpen] = useState(false);
   const [editingCountry, setEditingCountry] = useState<Partial<CountryData> | null>(null);
   const [editingHeaders, setEditingHeaders] = useState<TableHeaders>(headers);
 
@@ -510,7 +508,13 @@ export default function App() {
               </motion.div>
             </div>
             
-            <nav className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="flex flex-col items-end gap-3">
+              <div className="text-center w-full md:w-auto">
+                <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                  UNIVERSITÉ IBA DER THIAM DE THIÈS (UFR-SI)
+                </span>
+              </div>
+              <nav className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button 
                 onClick={() => setActiveTab('map')}
                 className={cn(
@@ -531,28 +535,74 @@ export default function App() {
                 <TableIcon size={16} />
                 Data
               </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsChatSourcesOpen(!isChatSourcesOpen)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-200",
+                    isChatSourcesOpen && "bg-slate-200 text-slate-900"
+                  )}
+                >
+                  <BookOpen size={16} />
+                  Chat Sources
+                  <ChevronDown size={14} className={cn("transition-transform", isChatSourcesOpen && "rotate-180")} />
+                </button>
+                
+                <AnimatePresence>
+                  {isChatSourcesOpen && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-[60]"
+                    >
+                      <button 
+                        onClick={() => {
+                          window.open('https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1', '_blank');
+                          setIsChatSourcesOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                        Partie 1
+                      </button>
+                      <button 
+                        onClick={() => {
+                          window.open('https://notebooklm.google.com/notebook/7168590f-d36f-426b-9f54-382eea234d8b?authuser=1', '_blank');
+                          setIsChatSourcesOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                        Partie 2
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <button 
-                onClick={() => window.open('https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1', '_blank')}
+                onClick={() => window.open('https://www.fig.net/searchresults.asp?q=ITRF+SENEGAL+', '_blank')}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-200"
                 )}
               >
-                <BookOpen size={16} />
-                Chat Sources
+                <ExternalLink size={16} />
+                FIG Sources
               </button>
               <div className="w-px h-6 bg-slate-200 mx-1 self-center" />
               <button 
-                onClick={resetToDefaults}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-red-500 hover:bg-red-50"
-                title="Reset all data to defaults"
+                onClick={handleSaveAll}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-emerald-600 hover:bg-emerald-50"
+                title="Enregistrer toutes les modifications"
               >
-                <RotateCcw size={16} />
-                Reset
+                <Save size={16} />
+                Enregistrer
               </button>
             </nav>
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <AnimatePresence mode="wait">
