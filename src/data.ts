@@ -96,7 +96,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "NER", pays: "Niger", reseauAncien: "", reseauActuel: "", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
 
-  { id: "NGA", pays: "Nigeria", reseauAncien: "Datum MINNA", reseauActuel: "NGD2022/NIGREF22 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
+  { id: "NGA", pays: "Nigeria", reseauAncien: "Datum MINNA", reseauActuel: "NGD2022 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
 
   { id: "UGA", pays: "Uganda", reseauAncien: "(Arc 1960)", reseauActuel: "Uganda Geodetic Reference Framework - UGRF", itrf: "ITRF 2005", epoque: "2010", status: "COMPLET" },
 
