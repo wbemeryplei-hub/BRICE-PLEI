@@ -38,6 +38,28 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const ISO3_TO_ISO2: Record<string, string> = {
+  'ZAF': 'za', 'DZA': 'dz', 'AGO': 'ao', 'BEN': 'bj', 'BWA': 'bw', 'BFA': 'bf', 'BDI': 'bi', 'CMR': 'cm',
+  'CPV': 'cv', 'COM': 'km', 'COG': 'cg', 'CIV': 'ci', 'DJI': 'dj', 'EGY': 'eg', 'ERI': 'er', 'SWZ': 'sz',
+  'ETH': 'et', 'GAB': 'ga', 'GMB': 'gm', 'GHA': 'gh', 'GIN': 'gn', 'GNQ': 'gq', 'GNB': 'gw', 'KEN': 'ke',
+  'LSO': 'ls', 'LBR': 'lr', 'LBY': 'ly', 'MDG': 'mg', 'MWI': 'mw', 'MLI': 'ml', 'MAR': 'ma', 'MUS': 'mu',
+  'MRT': 'mr', 'MOZ': 'mz', 'NAM': 'na', 'NER': 'ne', 'NGA': 'ng', 'UGA': 'ug', 'COD': 'cd', 'CAF': 'cf',
+  'RWA': 'rw', 'ESH': 'eh', 'STP': 'st', 'SEN': 'sn', 'SYC': 'sc', 'SLE': 'sl', 'SOM': 'so', 'SDN': 'sd',
+  'SSD': 'ss', 'TZA': 'tz', 'TCD': 'td', 'TGO': 'tg', 'TUN': 'tn', 'ZMB': 'zm', 'ZWE': 'zw'
+};
+
+const getFlagUrl = (iso3: string) => {
+  const iso2 = ISO3_TO_ISO2[iso3.toUpperCase()];
+  if (!iso2) return null;
+  return `https://flagcdn.com/w40/${iso2}.png`;
+};
+
+const getEmojiFlag = (iso3: string) => {
+  const iso2 = ISO3_TO_ISO2[iso3.toUpperCase()];
+  if (!iso2) return '';
+  return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => c.charCodeAt(0) + 127397));
+};
+
 // Map Component
 const AfricaMap = ({ 
   onCountryClick, 
@@ -178,7 +200,8 @@ const AfricaMap = ({
       .attr('pointer-events', 'none')
       .text((d: any) => {
         const country = data.find(c => c.id === d.id);
-        return country ? country.pays : d.properties.name;
+        const flag = country ? getEmojiFlag(country.id) : '';
+        return country ? `${flag} ${country.pays}` : d.properties.name;
       });
 
     // Add circles for small islands to make them more visible
@@ -235,7 +258,11 @@ const AfricaMap = ({
       .attr('font-size', width < 500 ? '5px' : '7px')
       .attr('font-weight', '800')
       .attr('fill', '#000000')
-      .text((d: any) => d.name);
+      .attr('pointer-events', 'none')
+      .text((d: any) => {
+        const flag = getEmojiFlag(d.id);
+        return `${flag} ${d.name}`;
+      });
 
   }, [geoData, selectedCountryId, onCountryClick, data, dimensions]);
 
@@ -257,7 +284,7 @@ const AfricaMap = ({
           dragMomentum={false}
           className={cn(
             "absolute z-20 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
-            dimensions.width < 640 ? "bottom-[140px] left-2" : "bottom-[160px] left-4 min-w-[150px]"
+            dimensions.width < 640 ? "top-2 right-2" : "top-4 right-4 min-w-[150px]"
           )}
         >
           <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1 flex items-center justify-between">
@@ -368,40 +395,85 @@ const AfricaMap = ({
 };
 
 export default function App() {
-  const [countries, setCountries] = useState<CountryData[]>(() => {
-    const saved = localStorage.getItem('geodetic_data');
-    return saved ? JSON.parse(saved) : AFRICA_DATA;
+  const [countries, setCountries] = useState<CountryData[]>(AFRICA_DATA);
+  const [headers, setHeaders] = useState<TableHeaders>({
+    country: 'Country 🌍',
+    formerNetwork: 'Former Network 🏛️',
+    currentNetwork: 'Current Network 📡',
+    itrf: 'ITRF 📐',
+    epoch: 'Epoch ⏱️',
+    status: 'Status 🏷️'
   });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [headers, setHeaders] = useState<TableHeaders>(() => {
-    const saved = localStorage.getItem('table_headers');
-    return saved ? JSON.parse(saved) : {
-      country: 'Country 🌍',
-      formerNetwork: 'Former Network 🏛️',
-      currentNetwork: 'Current Network 📡',
-      itrf: 'ITRF 📐',
-      epoch: 'Epoch ⏱️',
-      status: 'Status 🏷️'
+  // Load data from server
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/data');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.countries) {
+            setCountries(data.countries);
+          } else {
+            // If server has no data, initialize it with current AFRICA_DATA
+            await fetch('/api/data', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ countries: AFRICA_DATA, headers })
+            });
+          }
+          if (data.headers) setHeaders(data.headers);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data from server:", error);
+        // Fallback to localStorage if server fails
+        const savedData = localStorage.getItem('geodetic_data');
+        const savedHeaders = localStorage.getItem('table_headers');
+        if (savedData) setCountries(JSON.parse(savedData));
+        if (savedHeaders) setHeaders(JSON.parse(savedHeaders));
+      } finally {
+        setIsLoading(false);
+      }
     };
-  });
-
-  useEffect(() => {
-    localStorage.setItem('geodetic_data', JSON.stringify(countries));
-  }, [countries]);
-
-  useEffect(() => {
-    localStorage.setItem('table_headers', JSON.stringify(headers));
-  }, [headers]);
-
-  // Force update title if it's the old default to match user request
-  useEffect(() => {
-    // No longer needed as title is hardcoded
+    fetchData();
   }, []);
 
-  const handleSaveAll = () => {
-    localStorage.setItem('geodetic_data', JSON.stringify(countries));
-    localStorage.setItem('table_headers', JSON.stringify(headers));
-    alert("Toutes les modifications ont été enregistrées avec succès !");
+  // Persist to localStorage as backup
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('geodetic_data', JSON.stringify(countries));
+    }
+  }, [countries, isLoading]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('table_headers', JSON.stringify(headers));
+    }
+  }, [headers, isLoading]);
+
+  const handleSaveAll = async () => {
+    try {
+      const response = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ countries, headers })
+      });
+      
+      if (response.ok) {
+        localStorage.setItem('geodetic_data', JSON.stringify(countries));
+        localStorage.setItem('table_headers', JSON.stringify(headers));
+        alert("Toutes les modifications ont été enregistrées avec succès dans la base de données !");
+      } else {
+        throw new Error("Server response was not ok");
+      }
+    } catch (error) {
+      console.error("Failed to save data to server:", error);
+      // Fallback save to localStorage
+      localStorage.setItem('geodetic_data', JSON.stringify(countries));
+      localStorage.setItem('table_headers', JSON.stringify(headers));
+      alert("Erreur lors de l'enregistrement sur le serveur. Les données ont été sauvegardées localement dans votre navigateur.");
+    }
   };
 
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
@@ -695,7 +767,17 @@ export default function App() {
                           <Globe size={24} />
                         </div>
                         <div>
-                          <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{selectedCountry.pays}</h3>
+                          <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight flex items-center gap-2">
+                            {getFlagUrl(selectedCountry.id) && (
+                              <img 
+                                src={getFlagUrl(selectedCountry.id)!} 
+                                alt="" 
+                                className="w-6 h-auto rounded-sm shadow-sm border border-slate-100"
+                                referrerPolicy="no-referrer"
+                              />
+                            )}
+                            {selectedCountry.pays}
+                          </h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={cn(
                               "text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full",
@@ -817,7 +899,17 @@ export default function App() {
                           }}
                         >
                           <td className="px-6 py-4 font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            {country.pays}
+                            <div className="flex items-center gap-2">
+                              {getFlagUrl(country.id) && (
+                                <img 
+                                  src={getFlagUrl(country.id)!} 
+                                  alt="" 
+                                  className="w-5 h-auto rounded-sm border border-slate-100"
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
+                              {country.pays}
+                            </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
                             {country.reseauAncien || '-'}
@@ -957,13 +1049,28 @@ export default function App() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{headers.country}</label>
-                    <input 
-                      type="text" 
-                      value={editingCountry.pays || ''}
-                      onChange={(e) => setEditingCountry({ ...editingCountry, pays: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                      placeholder="e.g., Senegal"
-                    />
+                    <div className="relative">
+                      {editingCountry.id && getFlagUrl(editingCountry.id) && (
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                          <img 
+                            src={getFlagUrl(editingCountry.id)!} 
+                            alt="" 
+                            className="w-5 h-auto rounded-sm border border-slate-100"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      )}
+                      <input 
+                        type="text" 
+                        value={editingCountry.pays || ''}
+                        onChange={(e) => setEditingCountry({ ...editingCountry, pays: e.target.value })}
+                        className={cn(
+                          "w-full bg-slate-50 border border-slate-200 rounded-xl py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none",
+                          editingCountry.id && getFlagUrl(editingCountry.id) ? "pl-10 pr-4" : "px-4"
+                        )}
+                        placeholder="e.g., Senegal"
+                      />
+                    </div>
                   </div>
                 </div>
 

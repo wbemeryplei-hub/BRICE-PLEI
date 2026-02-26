@@ -42,7 +42,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "CPV", pays: "Cape Verde", reseauAncien: "CVRS96 ITRF 1996", reseauActuel: "Fundamental Geodetic Network of Cape Verde (RGFCV)", itrf: "ITRF 1996", epoque: "1996", status: "COMPLET" },
 
-  { id: "COM", pays: "Comoros", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "COM", pays: "Comoros", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "SANS_EPOQUE" },
 
   { id: "COG", pays: "Congo-Brazzaville", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
 
@@ -76,7 +76,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "LBR", pays: "Liberia", reseauAncien: "", reseauActuel: "Liberia Geodetic Reference frame (LGR)", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
 
-  { id: "LBY", pays: "Libya", reseauAncien: "", reseauActuel: "LGD2006(Libyan Geodetic Datum 2006)", itrf: "ITRF 2000", epoque: "2006.3822", status: "MANQUE_INFO" },
+  { id: "LBY", pays: "Libya", reseauAncien: "", reseauActuel: "LGD2006(Libyan Geodetic Datum 2006)", itrf: "ITRF 2000", epoque: "2006.3822", status: "COMPLET" },
 
   { id: "MDG", pays: "Madagascar", reseauAncien: "", reseauActuel: "RGM65", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
 
@@ -96,7 +96,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "NER", pays: "Niger", reseauAncien: "", reseauActuel: "", itrf: "WGS 84", epoque: "", status: "CANEVA_LOCAL" },
 
-  { id: "NGA", pays: "Nigeria", reseauAncien: "Datum MINNA", reseauActuel: "NGD2022 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
+  { id: "NGA", pays: "Nigeria", reseauAncien: "Datum MINNA", reseauActuel: "NGD2022/NIGREF22 (Nigerian Geodetic Datum)", itrf: "ITRF 2020", epoque: "2015", status: "COMPLET" },
 
   { id: "UGA", pays: "Uganda", reseauAncien: "(Arc 1960)", reseauActuel: "Uganda Geodetic Reference Framework - UGRF", itrf: "ITRF 2005", epoque: "2010", status: "COMPLET" },
 
@@ -124,7 +124,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "TZA", pays: "Tanzania", reseauAncien: "", reseauActuel: "TAREF 11 (Tanzania Reference Frame 2011)", itrf: "ITRF 2014", epoque: "2011.0", status: "COMPLET" },
 
-  { id: "TCD", pays: "Chad", reseauAncien: "", reseauActuel: "", itrf: "", epoque: "", status: "MANQUE_INFO" },
+  { id: "TCD", pays: "Chad", reseauAncien: "", reseauActuel: "RGT20 (Réseau Géodésique Tchad 2020", itrf: "ITRF", epoque: "", status: "SANS_EPOQUE" },
 
   { id: "TGO", pays: "Togo", reseauAncien: "", reseauActuel: "", itrf: "ITRF 2014", epoque: "2010", status: "COMPLET" },
 
@@ -132,6 +132,6 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "ZMB", pays: "Zambia", reseauAncien: "", reseauActuel: "Zambia Main Network", itrf: "ITRF 2000", epoque: "2005", status: "COMPLET" },
 
-  { id: "ZWE", pays: "Zimbabwe", reseauAncien: "", reseauActuel: "ZINGSA", itrf: "ITRF 2000", epoque: "", status: "MANQUE_INFO" }
+  { id: "ZWE", pays: "Zimbabwe", reseauAncien: "", reseauActuel: "ZINGSA", itrf: "ITRF 2000", epoque: "", status: "SANS_EPOQUE" }
 
 ];
