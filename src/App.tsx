@@ -25,7 +25,8 @@ import {
   Save,
   RotateCcw,
   Settings,
-  ExternalLink
+  ExternalLink,
+  Github
 } from 'lucide-react';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
 import { clsx, type ClassValue } from 'clsx';
@@ -480,6 +481,80 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'table' | 'sources'>('map');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
+  const [githubUser, setGithubUser] = useState<any>(null);
+  const [githubRepo, setGithubRepo] = useState('africa-geodetic-data');
+  const [isPushing, setIsPushing] = useState(false);
+
+  // GitHub Auth listener
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'GITHUB_AUTH_SUCCESS') {
+        fetchGithubUser();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const fetchGithubUser = async () => {
+    try {
+      const res = await fetch('/api/github/user');
+      if (res.ok) {
+        const user = await res.json();
+        setGithubUser(user);
+      } else {
+        setGithubUser(null);
+      }
+    } catch (e) {
+      setGithubUser(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchGithubUser();
+  }, []);
+
+  const handleGithubConnect = async () => {
+    try {
+      const res = await fetch('/api/auth/github/url');
+      const { url } = await res.json();
+      window.open(url, 'github_oauth', 'width=600,height=700');
+    } catch (e) {
+      alert("Failed to start GitHub authentication");
+    }
+  };
+
+  const handleGithubLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setGithubUser(null);
+  };
+
+  const handleGithubPush = async () => {
+    if (!githubRepo) return alert("Please enter a repository name");
+    setIsPushing(true);
+    try {
+      const res = await fetch('/api/github/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repo: githubRepo,
+          path: 'geodetic_data.json',
+          message: `Update geodetic data - ${new Date().toISOString()}`
+        })
+      });
+      if (res.ok) {
+        alert("Data pushed to GitHub successfully!");
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error}`);
+      }
+    } catch (e) {
+      alert("Failed to push to GitHub");
+    } finally {
+      setIsPushing(false);
+    }
+  };
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [isChatSourcesOpen, setIsChatSourcesOpen] = useState(false);
   const [editingCountry, setEditingCountry] = useState<Partial<CountryData> | null>(null);
@@ -682,6 +757,14 @@ export default function App() {
                 FIG Sources
               </button>
               <div className="w-px h-6 bg-slate-200 mx-1 self-center" />
+              <button 
+                onClick={() => setIsGitHubModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-900 hover:bg-slate-100"
+                title="Partager sur GitHub"
+              >
+                <Github size={16} />
+                GitHub
+              </button>
               <button 
                 onClick={handleSaveAll}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-emerald-600 hover:bg-emerald-50"
@@ -1011,7 +1094,123 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Edit Modal */}
+      {/* GitHub Integration Modal */}
+      <AnimatePresence>
+        {isGitHubModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsGitHubModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 sm:p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                      <Github className="text-slate-900" />
+                      GitHub
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Partagez vos données sur GitHub</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsGitHubModalOpen(false)}
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <X size={20} className="text-slate-400" />
+                  </button>
+                </div>
+
+                {!githubUser ? (
+                  <div className="space-y-6">
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Connectez votre compte GitHub pour pouvoir pousser directement le fichier <code className="bg-slate-200 px-1 rounded text-xs font-mono">geodetic_data.json</code> vers l'un de vos dépôts.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={handleGithubConnect}
+                      className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-slate-800 transition-all active:scale-[0.98]"
+                    >
+                      <Github size={20} />
+                      Connecter GitHub
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <img 
+                        src={githubUser.avatar_url} 
+                        alt={githubUser.login} 
+                        className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+                      />
+                      <div className="flex-1">
+                        <p className="font-bold text-slate-900">{githubUser.name || githubUser.login}</p>
+                        <p className="text-xs text-slate-500">@{githubUser.login}</p>
+                      </div>
+                      <button 
+                        onClick={handleGithubLogout}
+                        className="text-xs font-bold text-red-500 hover:text-red-600"
+                      >
+                        Déconnecter
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nom du dépôt</label>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                          <span className="text-slate-400 text-sm">{githubUser.login}/</span>
+                          <input 
+                            type="text" 
+                            value={githubRepo}
+                            onChange={(e) => setGithubRepo(e.target.value)}
+                            className="flex-1 bg-transparent text-sm font-medium outline-none text-slate-900"
+                            placeholder="nom-du-depot"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 italic mt-1">
+                          Le dépôt doit déjà exister sur votre compte.
+                        </p>
+                      </div>
+
+                      <button 
+                        onClick={handleGithubPush}
+                        disabled={isPushing || !githubRepo}
+                        className={cn(
+                          "w-full py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98]",
+                          isPushing || !githubRepo 
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                            : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200"
+                        )}
+                      >
+                        {isPushing ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Envoi en cours...
+                          </>
+                        ) : (
+                          <>
+                            <Github size={20} />
+                            Pousser les données
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {isEditModalOpen && editingCountry && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
