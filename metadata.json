@@ -1,5 +1,5 @@
 {
-  "name": "   PRT-DYNAMIQUE DES REPERES DE REFERENCE GEODESIQUE EN AFRIQUE",
+  "name": "PRT-DYNAMIQUE DES REPERES DE REFERENCE GEODESIQUE EN AFRIQUE",
   "description": "Tableau de bord interactif présentant l'état des repères de référence géodésique en Afrique, classés par disponibilité de l'ITRF et de l'époque.",
   "requestFramePermissions": []
 }
