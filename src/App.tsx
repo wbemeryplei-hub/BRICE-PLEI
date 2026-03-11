@@ -25,8 +25,13 @@ import {
   Save,
   RotateCcw,
   Settings,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  Send,
+  BarChart3
 } from 'lucide-react';
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import ReactMarkdown from 'react-markdown';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -103,8 +108,9 @@ const AfricaMap = ({
     fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
       .then(response => response.json())
       .then(geoJson => {
-        const africanIsoCodes = data.map(d => d.id);
-        // Fallback for common ID variations (e.g. South Sudan might be SDS in some GeoJSONs)
+        // Use the full list of IDs from AFRICA_DATA to ensure all countries are always drawn
+        const africanIsoCodes = AFRICA_DATA.map(d => d.id);
+        // Fallback for common ID variations
         const idMap: Record<string, string> = {
           'SDS': 'SSD',
           'SS': 'SSD',
@@ -167,15 +173,19 @@ const AfricaMap = ({
       })
       .attr('fill', (d: any) => {
         const country = data.find(c => c.id === d.id);
-        if (!country) return '#f1f5f9'; // Slate 100
+        if (!country) return '#f1f5f9'; // Muted slate 100 for non-filtered countries
         switch (country.status) {
-          case 'COMPLET': return '#93c5fd'; // Soft Blue
-          case 'SANS_EPOQUE': return '#fde047'; // Soft Yellow
-          case 'MANQUE_INFO': return '#fca5a5'; // Soft Red
-          case 'CANEVA_LOCAL': return '#c084fc'; // Soft Purple
-          case 'ACTIF': return '#cbd5e1'; // Soft Slate
+          case 'COMPLETE': return '#93c5fd'; // Soft Blue
+          case 'NO_EPOCH': return '#fde047'; // Soft Yellow
+          case 'MISSING_INFO': return '#fca5a5'; // Soft Red
+          case 'LOCAL_NETWORK': return '#c084fc'; // Soft Purple
+          case 'ACTIVE': return '#cbd5e1'; // Soft Slate
           default: return '#f1f5f9';
         }
+      })
+      .attr('opacity', (d: any) => {
+        const country = data.find(c => c.id === d.id);
+        return country ? 1 : 0.3; // More transparent for non-filtered countries
       })
       .on('click', (event, d: any) => {
         const country = data.find(c => c.id === d.id);
@@ -200,8 +210,9 @@ const AfricaMap = ({
       .attr('pointer-events', 'none')
       .text((d: any) => {
         const country = data.find(c => c.id === d.id);
-        const flag = country ? getEmojiFlag(country.id) : '';
-        return country ? `${flag} ${country.pays}` : d.properties.name;
+        if (!country) return '';
+        const flag = getEmojiFlag(country.id);
+        return `${flag} ${country.country}`;
       });
 
     // Add circles for small islands to make them more visible
@@ -232,15 +243,19 @@ const AfricaMap = ({
       .attr('r', 5)
       .attr('fill', (d: any) => {
         const country = data.find(c => c.id === d.id);
-        if (!country) return '#f1f5f9';
+        if (!country) return '#f8fafc';
         switch (country.status) {
-          case 'COMPLET': return '#93c5fd';
-          case 'SANS_EPOQUE': return '#fde047';
-          case 'MANQUE_INFO': return '#fca5a5';
-          case 'CANEVA_LOCAL': return '#c084fc';
-          case 'ACTIF': return '#cbd5e1';
+          case 'COMPLETE': return '#93c5fd';
+          case 'NO_EPOCH': return '#fde047';
+          case 'MISSING_INFO': return '#fca5a5';
+          case 'LOCAL_NETWORK': return '#c084fc';
+          case 'ACTIVE': return '#cbd5e1';
           default: return '#f1f5f9';
         }
+      })
+      .attr('opacity', (d: any) => {
+        const country = data.find(c => c.id === d.id);
+        return country ? 1 : 0.2;
       })
       .attr('stroke', '#fff')
       .attr('stroke-width', 1.5)
@@ -288,7 +303,7 @@ const AfricaMap = ({
           )}
         >
           <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1 flex items-center justify-between">
-            <span>Statistics 📊</span>
+            <span>Statistics</span>
             <div className="flex flex-col gap-0.5">
               <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
               <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
@@ -304,10 +319,10 @@ const AfricaMap = ({
             </thead>
             <tbody className="divide-y divide-slate-50">
               {[
-                { label: 'Complete', status: 'COMPLET', color: 'bg-[#93c5fd]' },
-                { label: 'No Epoch', status: 'SANS_EPOQUE', color: 'bg-[#fde047]' },
-                { label: 'Missing', status: 'MANQUE_INFO', color: 'bg-[#fca5a5]' },
-                { label: 'Local', status: 'CANEVA_LOCAL', color: 'bg-[#c084fc]' }
+                { label: 'ITRF with Epoch', status: 'COMPLETE', color: 'bg-[#93c5fd]' },
+                { label: 'ITRF without Epoch', status: 'NO_EPOCH', color: 'bg-[#fde047]' },
+                { label: 'Missing Info', status: 'MISSING_INFO', color: 'bg-[#fca5a5]' },
+                { label: 'Local Network', status: 'LOCAL_NETWORK', color: 'bg-[#c084fc]' }
               ].map((item) => {
                 const count = data.filter(c => c.status === item.status).length;
                 const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : 0;
@@ -337,7 +352,7 @@ const AfricaMap = ({
           )}
         >
           <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider flex items-center justify-between">
-            <span>Legend 🗺️</span>
+            <span>Legend</span>
             <div className="flex flex-col gap-0.5">
               <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
               <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
@@ -345,19 +360,19 @@ const AfricaMap = ({
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#93c5fd] border border-blue-400" />
-            <span>ITRF with Epoch ✅</span>
+            <span>ITRF with Epoch</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#fde047] border border-yellow-400" />
-            <span>ITRF without Epoch ⚠️</span>
+            <span>ITRF without Epoch</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#fca5a5] border border-red-400" />
-            <span>Missing Information ❌</span>
+            <span>Missing Info</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#c084fc] border border-purple-400" />
-            <span>Local Network 📍</span>
+            <span>Local Network</span>
           </div>
         </motion.div>
 
@@ -372,7 +387,7 @@ const AfricaMap = ({
           )}
         >
           <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-2">
-            <span>Authors ✍️</span>
+            <span>Authors</span>
             <div className="flex flex-col gap-0.5">
               <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
               <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
@@ -397,12 +412,12 @@ const AfricaMap = ({
 export default function App() {
   const [countries, setCountries] = useState<CountryData[]>(AFRICA_DATA);
   const [headers, setHeaders] = useState<TableHeaders>({
-    country: 'Country 🌍',
-    formerNetwork: 'Former Network 🏛️',
-    currentNetwork: 'Current Network 📡',
-    itrf: 'ITRF 📐',
-    epoch: 'Epoch ⏱️',
-    status: 'Status 🏷️'
+    country: 'Country',
+    formerNetwork: 'Former Network',
+    currentNetwork: 'Current Network',
+    itrf: 'ITRF',
+    epoch: 'Epoch',
+    status: 'Status'
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -463,7 +478,7 @@ export default function App() {
       if (response.ok) {
         localStorage.setItem('geodetic_data', JSON.stringify(countries));
         localStorage.setItem('table_headers', JSON.stringify(headers));
-        alert("Toutes les modifications ont été enregistrées avec succès dans la base de données !");
+        alert("All changes have been successfully saved to the database!");
       } else {
         throw new Error("Server response was not ok");
       }
@@ -472,28 +487,101 @@ export default function App() {
       // Fallback save to localStorage
       localStorage.setItem('geodetic_data', JSON.stringify(countries));
       localStorage.setItem('table_headers', JSON.stringify(headers));
-      alert("Erreur lors de l'enregistrement sur le serveur. Les données ont été sauvegardées localement dans votre navigateur.");
+      alert("Error saving to server. Data has been saved locally in your browser.");
     }
   };
 
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'map' | 'table' | 'sources'>('map');
+  const [activeTab, setActiveTab] = useState<'map' | 'table' | 'chat' | 'filter' | 'sources'>('map');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
-  const [isChatSourcesOpen, setIsChatSourcesOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    itrf: '',
+    status: '',
+    country: '',
+    zone: ''
+  });
   const [editingCountry, setEditingCountry] = useState<Partial<CountryData> | null>(null);
   const [editingHeaders, setEditingHeaders] = useState<TableHeaders>(headers);
+
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isChatLoading) return;
+
+    const userMessage = chatInput.trim();
+    setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const model = "gemini-3-flash-preview";
+      
+      const systemInstruction = `You are a high-level Geodetic Engineer and Data Scientist working on the project 'PRT M2 - DYNAMICS OF GEODETIC REFERENCE FRAMES IN AFRICA'. Do NOT present yourself as an AI or an assistant. Speak directly as the expert in charge.
+      
+      KNOWLEDGE BASE & SOURCES:
+      You have access to several critical sources of information. You must perform deep keyword searches within these sources to find the most accurate and exhaustive information:
+      1. Dashboard Real-time Data:
+      ${countries.map(c => `${c.country} (${c.zone}): ITRF ${c.itrf || 'N/A'}, Epoch ${c.epoch || 'N/A'}, Status ${c.status}`).join('\n')}
+      
+      2. Technical Documentation & Specialized Gems:
+      - https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1
+      - https://notebooklm.google.com/notebook/7168590f-d36f-426b-9f54-382eea234d8b?authuser=1
+      - https://gemini.google.com/gem/16JxV9AuvyKjeBaV35kb_mtoD9PGcOJEh?usp=drive_link
+      
+      RESPONSE GUIDELINES:
+      - DEEP SEARCH: Focus on finding the exact keywords and concepts requested. Dig deep into the technical details.
+      - EXHAUSTIVENESS: Provide detailed, comprehensive, and exhaustive explanations. Go into depth for every topic.
+      - ORGANIZATION: Use a clear structure with headings, bullet points, and numbered lists.
+      - NO SOURCE CITATIONS: Do NOT explicitly list or name the sources (like "Partie 1", "Notebook", or URLs) in your response. Provide the information directly as your own expert knowledge.
+      - TRUTHFULNESS: Be truthful and precise. If information is missing from all sources, state that it is not available in the current technical documentation.
+      
+      YOUR ROLE:
+      - Provide technical analysis of geodetic reference frames in Africa.
+      - Explain concepts like ITRF, AFREF, and epochs as described in the sources.
+      - Help users interpret the data from the dashboard and the technical documents.
+      
+      LANGUAGE:
+      - ALWAYS respond in English, even if the user asks questions in French or any other language.
+      - Use technical terminology correctly (e.g., 'reference frame', 'epoch', 'CORS station').`;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: [
+          ...chatMessages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })),
+          { role: 'user', parts: [{ text: userMessage }] }
+        ],
+        config: {
+          systemInstruction,
+          tools: [{ urlContext: {} }, { googleSearch: {} }],
+          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }
+        }
+      });
+
+      const modelResponse = response.text || "I'm sorry, I couldn't process that request.";
+      setChatMessages(prev => [...prev, { role: 'model', text: modelResponse }]);
+    } catch (error) {
+      console.error("Chat Error:", error);
+      setChatMessages(prev => [...prev, { role: 'model', text: "Sorry, an error occurred while communicating with the assistant." }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(countries.map(c => ({
-      'Country': c.pays,
-      'Former Network': c.reseauAncien,
-      'Current Network': c.reseauActuel,
+      'Country': c.country,
+      'Former Network': c.formerNetwork,
+      'Current Network': c.currentNetwork,
       'ITRF': c.itrf,
-      'Epoch': c.epoque,
+      'Epoch': c.epoch,
       'Status': c.status
     })));
     const wb = XLSX.utils.book_new();
@@ -515,15 +603,23 @@ export default function App() {
   };
 
   const filteredData = useMemo(() => {
-    return countries.filter(c => 
-      c.pays.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.itrf.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.reseauActuel.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, countries]);
+    return countries.filter(c => {
+      const matchesSearch = searchQuery === '' || 
+        c.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.itrf.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.currentNetwork && c.currentNetwork.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesItrf = filters.itrf === '' || c.itrf === filters.itrf;
+      const matchesStatus = filters.status === '' || c.status === filters.status;
+      const matchesCountry = filters.country === '' || c.country.toLowerCase().includes(filters.country.toLowerCase());
+      const matchesZone = filters.zone === '' || c.zone === filters.zone;
+
+      return matchesSearch && matchesItrf && matchesStatus && matchesCountry && matchesZone;
+    });
+  }, [searchQuery, countries, filters]);
 
   const handleSaveCountry = () => {
-    if (!editingCountry?.id || !editingCountry?.pays) {
+    if (!editingCountry?.id || !editingCountry?.country) {
       alert("ID and country name are required.");
       return;
     }
@@ -555,12 +651,13 @@ export default function App() {
   const openEditModal = (country: CountryData | null = null) => {
     setEditingCountry(country ? { ...country } : {
       id: '',
-      pays: '',
-      reseauAncien: '',
-      reseauActuel: '',
+      country: '',
+      formerNetwork: '',
+      currentNetwork: '',
       itrf: '',
-      epoque: '',
-      status: 'MANQUE_INFO'
+      epoch: '',
+      status: 'MISSING_INFO',
+      zone: 'WEST'
     });
     setIsEditModalOpen(true);
   };
@@ -627,51 +724,16 @@ export default function App() {
                 <TableIcon size={16} />
                 Data
               </button>
-              <div className="relative">
-                <button 
-                  onClick={() => setIsChatSourcesOpen(!isChatSourcesOpen)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-200",
-                    isChatSourcesOpen && "bg-slate-200 text-slate-900"
-                  )}
-                >
-                  <BookOpen size={16} />
-                  Chat Sources
-                  <ChevronDown size={14} className={cn("transition-transform", isChatSourcesOpen && "rotate-180")} />
-                </button>
-                
-                <AnimatePresence>
-                  {isChatSourcesOpen && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-[60]"
-                    >
-                      <button 
-                        onClick={() => {
-                          window.open('https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1', '_blank');
-                          setIsChatSourcesOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                        Partie 1
-                      </button>
-                      <button 
-                        onClick={() => {
-                          window.open('https://notebooklm.google.com/notebook/7168590f-d36f-426b-9f54-382eea234d8b?authuser=1', '_blank');
-                          setIsChatSourcesOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                        Partie 2
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <button 
+                onClick={() => setActiveTab('chat')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                  activeTab === 'chat' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                )}
+              >
+                <MessageSquare size={16} />
+                Chat Assistant
+              </button>
               <button 
                 onClick={() => window.open('https://www.fig.net/searchresults.asp?q=ITRF+SENEGAL+', '_blank')}
                 className={cn(
@@ -685,10 +747,10 @@ export default function App() {
               <button 
                 onClick={handleSaveAll}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-emerald-600 hover:bg-emerald-50"
-                title="Enregistrer toutes les modifications"
+                title="Save all changes"
               >
                 <Save size={16} />
-                Enregistrer
+                Save
               </button>
             </nav>
           </div>
@@ -708,8 +770,24 @@ export default function App() {
             >
               {/* Map Section */}
               <div className="lg:col-span-2 flex flex-col gap-4 h-[500px] sm:h-[600px] lg:h-full">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider lg:hidden">Interactive Map</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
+                    <Filter size={14} className="text-indigo-600" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zone:</span>
+                    <select 
+                      value={filters.zone}
+                      onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
+                      className="bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="">All Zones</option>
+                      <option value="NORTH">NORTH</option>
+                      <option value="SOUTH">SOUTH</option>
+                      <option value="EAST">EAST</option>
+                      <option value="WEST">WEST</option>
+                      <option value="CENTER">CENTER</option>
+                    </select>
+                  </div>
+                  
                   <button 
                     onClick={exportMapAsImage}
                     className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 ml-auto"
@@ -723,7 +801,7 @@ export default function App() {
                   <AfricaMap 
                     onCountryClick={setSelectedCountry} 
                     selectedCountryId={selectedCountry?.id || null} 
-                    data={countries}
+                    data={filteredData}
                     headers={headers}
                     setEditingHeaders={setEditingHeaders}
                     setIsHeaderModalOpen={setIsHeaderModalOpen}
@@ -736,7 +814,7 @@ export default function App() {
                 <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                   <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                     <Info size={18} className="text-indigo-600" />
-                    Country Details 📋
+                    Country Details
                   </h2>
                   {selectedCountry && (
                     <button 
@@ -758,10 +836,10 @@ export default function App() {
                       <div className="flex items-center gap-3 sm:gap-4">
                         <div className={cn(
                           "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-sm",
-                          selectedCountry.status === 'COMPLET' ? "bg-blue-50 text-blue-600" :
-                          selectedCountry.status === 'SANS_EPOQUE' ? "bg-yellow-50 text-yellow-600" :
-                          selectedCountry.status === 'MANQUE_INFO' ? "bg-red-50 text-red-600" :
-                          selectedCountry.status === 'CANEVA_LOCAL' ? "bg-purple-50 text-purple-600" :
+                          selectedCountry.status === 'COMPLETE' ? "bg-blue-50 text-blue-600" :
+                          selectedCountry.status === 'NO_EPOCH' ? "bg-yellow-50 text-yellow-600" :
+                          selectedCountry.status === 'MISSING_INFO' ? "bg-red-50 text-red-600" :
+                          selectedCountry.status === 'LOCAL_NETWORK' ? "bg-purple-50 text-purple-600" :
                           "bg-slate-50 text-slate-600"
                         )}>
                           <Globe size={24} />
@@ -776,15 +854,15 @@ export default function App() {
                                 referrerPolicy="no-referrer"
                               />
                             )}
-                            {selectedCountry.pays}
+                            {selectedCountry.country}
                           </h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={cn(
                               "text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full",
-                              selectedCountry.status === 'COMPLET' ? "bg-blue-100 text-blue-700" :
-                              selectedCountry.status === 'SANS_EPOQUE' ? "bg-yellow-100 text-yellow-700" :
-                              selectedCountry.status === 'MANQUE_INFO' ? "bg-red-100 text-red-700" :
-                              selectedCountry.status === 'CANEVA_LOCAL' ? "bg-purple-100 text-purple-700" :
+                              selectedCountry.status === 'COMPLETE' ? "bg-blue-100 text-blue-700" :
+                              selectedCountry.status === 'NO_EPOCH' ? "bg-yellow-100 text-yellow-700" :
+                              selectedCountry.status === 'MISSING_INFO' ? "bg-red-100 text-red-700" :
+                              selectedCountry.status === 'LOCAL_NETWORK' ? "bg-purple-100 text-purple-700" :
                               "bg-slate-100 text-slate-700"
                             )}>
                               {selectedCountry.status.replace('_', ' ')}
@@ -810,10 +888,10 @@ export default function App() {
                       </div>
 
                       <div className="space-y-4">
-                        <InfoItem label={headers.formerNetwork} value={selectedCountry.reseauAncien} emoji="🏛️" />
-                        <InfoItem label={headers.currentNetwork} value={selectedCountry.reseauActuel} emoji="📡" />
-                        <InfoItem label={headers.itrf} value={selectedCountry.itrf} emoji="📐" />
-                        <InfoItem label={headers.epoch} value={selectedCountry.epoque} emoji="⏱️" />
+                        <InfoItem label={headers.formerNetwork} value={selectedCountry.formerNetwork} />
+                        <InfoItem label={headers.currentNetwork} value={selectedCountry.currentNetwork} />
+                        <InfoItem label={headers.itrf} value={selectedCountry.itrf} />
+                        <InfoItem label={headers.epoch} value={selectedCountry.epoch} />
                       </div>
                     </motion.div>
                   ) : (
@@ -822,7 +900,7 @@ export default function App() {
                         <MapIcon size={32} className="text-slate-400" />
                       </div>
                       <p className="text-sm max-w-[200px] text-slate-500">
-                        Click on a country on the map to see detailed information ✨
+                        Click on a country on the map to see detailed information
                       </p>
                     </div>
                   )}
@@ -839,22 +917,121 @@ export default function App() {
               exit={{ opacity: 0, y: 20 }}
               className="space-y-6"
             >
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <BarChart3 size={20} className="text-indigo-600" />
+                    Filtered Statistics
+                  </h3>
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    Based on {filteredData.length} countries
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[
+                    { label: 'ITRF with Epoch', status: 'COMPLETE', color: 'bg-blue-50 text-blue-700 border-blue-100' },
+                    { label: 'ITRF without Epoch', status: 'NO_EPOCH', color: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
+                    { label: 'Missing Info', status: 'MISSING_INFO', color: 'bg-red-50 text-red-700 border-red-100' },
+                    { label: 'Local Network', status: 'LOCAL_NETWORK', color: 'bg-purple-50 text-purple-700 border-purple-100' }
+                  ].map((item) => {
+                    const count = filteredData.filter(c => c.status === item.status).length;
+                    const percentage = filteredData.length > 0 ? ((count / filteredData.length) * 100).toFixed(1) : 0;
+                    return (
+                      <div key={item.status} className={cn("p-4 rounded-2xl border transition-all", item.color)}>
+                        <div className="text-[10px] font-black uppercase tracking-wider mb-1 opacity-70">{item.label}</div>
+                        <div className="flex items-end gap-2">
+                          <span className="text-2xl font-black leading-none">{count}</span>
+                          <span className="text-xs font-bold opacity-60 mb-0.5">{percentage}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <Filter size={20} className="text-indigo-600" />
+                    Advanced Filters
+                  </h3>
+                  <button 
+                    onClick={() => setFilters({ itrf: '', status: '', country: '', zone: '' })}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                  >
+                    <RotateCcw size={14} />
+                    Reset Filters
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Country Name</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                      <input 
+                        type="text" 
+                        value={filters.country}
+                        onChange={(e) => setFilters({ ...filters, country: e.target.value })}
+                        placeholder="Search country..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ITRF Frame</label>
+                    <select 
+                      value={filters.itrf}
+                      onChange={(e) => setFilters({ ...filters, itrf: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All Frames</option>
+                      {Array.from(new Set(countries.map(c => c.itrf).filter(Boolean))).sort().map(itrf => (
+                        <option key={itrf} value={itrf}>{itrf}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+                    <select 
+                      value={filters.status}
+                      onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="COMPLETE">ITRF with Epoch</option>
+                      <option value="NO_EPOCH">ITRF without Epoch</option>
+                      <option value="MISSING_INFO">Missing Information</option>
+                      <option value="LOCAL_NETWORK">Local Network</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter by Zone</label>
+                    <select 
+                      value={filters.zone}
+                      onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All Zones</option>
+                      <option value="NORTH">NORTH</option>
+                      <option value="SOUTH">SOUTH</option>
+                      <option value="EAST">EAST</option>
+                      <option value="WEST">WEST</option>
+                      <option value="CENTER">CENTER</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input 
-                    type="text" 
-                    placeholder="Search for a country, ITRF..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                  />
+                <div className="text-sm text-slate-500">
+                  Showing <span className="font-bold text-slate-900">{filteredData.length}</span> countries
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium transition-colors">
-                    <Filter size={16} />
-                    Filter
-                  </button>
                   <button 
                     onClick={exportToExcel}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md"
@@ -908,28 +1085,28 @@ export default function App() {
                                   referrerPolicy="no-referrer"
                                 />
                               )}
-                              {country.pays}
+                              {country.country}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
-                            {country.reseauAncien || '-'}
+                            {country.formerNetwork || '-'}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
-                            {country.reseauActuel || '-'}
+                            {country.currentNetwork || '-'}
                           </td>
                           <td className="px-6 py-4 text-sm font-mono text-indigo-600">
                             {country.itrf || '-'}
                           </td>
                           <td className="px-6 py-4 text-sm font-mono text-amber-600">
-                            {country.epoque || '-'}
+                            {country.epoch || '-'}
                           </td>
                           <td className="px-6 py-4">
                             <span className={cn(
                               "text-[10px] uppercase font-black tracking-tighter px-2 py-1 rounded-md",
-                              country.status === 'COMPLET' ? "bg-blue-50 text-blue-600 border border-blue-100" :
-                              country.status === 'SANS_EPOQUE' ? "bg-yellow-50 text-yellow-600 border border-yellow-100" :
-                              country.status === 'MANQUE_INFO' ? "bg-red-50 text-red-600 border border-red-100" :
-                              country.status === 'CANEVA_LOCAL' ? "bg-purple-50 text-purple-600 border border-purple-100" :
+                              country.status === 'COMPLETE' ? "bg-blue-50 text-blue-600 border border-blue-100" :
+                              country.status === 'NO_EPOCH' ? "bg-yellow-50 text-yellow-600 border border-yellow-100" :
+                              country.status === 'MISSING_INFO' ? "bg-red-50 text-red-600 border border-red-100" :
+                              country.status === 'LOCAL_NETWORK' ? "bg-purple-50 text-purple-600 border border-purple-100" :
                               "bg-slate-50 text-slate-600 border border-slate-100"
                             )}>
                               {country.status.replace('_', ' ')}
@@ -939,6 +1116,206 @@ export default function App() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'filter' && (
+            <motion.div 
+              key="filter-tab"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                      <Filter className="text-indigo-600" />
+                      Advanced Filtering
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Refine the data displayed in the table and map</p>
+                  </div>
+                  <button 
+                    onClick={() => setFilters({ itrf: '', status: '', country: '', zone: '' })}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                  >
+                    <RotateCcw size={14} />
+                    Reset All
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter by Country Name</label>
+                    <input 
+                      type="text" 
+                      value={filters.country}
+                      onChange={(e) => setFilters({ ...filters, country: e.target.value })}
+                      placeholder="e.g., Senegal, Morocco..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter by ITRF Frame</label>
+                    <select 
+                      value={filters.itrf}
+                      onChange={(e) => setFilters({ ...filters, itrf: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All ITRF Frames</option>
+                      {Array.from(new Set(countries.map(c => c.itrf).filter(Boolean))).sort().map(itrf => (
+                        <option key={itrf} value={itrf}>{itrf}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter by Status</label>
+                    <select 
+                      value={filters.status}
+                      onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="COMPLETE">ITRF with Epoch</option>
+                      <option value="NO_EPOCH">ITRF without Epoch</option>
+                      <option value="MISSING_INFO">Missing Information</option>
+                      <option value="LOCAL_NETWORK">Local Network</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter by Zone</label>
+                    <select 
+                      value={filters.zone}
+                      onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All Zones</option>
+                      <option value="NORTH">NORTH</option>
+                      <option value="SOUTH">SOUTH</option>
+                      <option value="EAST">EAST</option>
+                      <option value="WEST">WEST</option>
+                      <option value="CENTER">CENTER</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-12 flex justify-center">
+                  <button 
+                    onClick={() => setActiveTab('table')}
+                    className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                  >
+                    Apply Filters & View Results ({filteredData.length} countries)
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'chat' && (
+            <motion.div 
+              key="chat-tab"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="max-w-4xl mx-auto h-[calc(100vh-220px)] min-h-[500px]"
+            >
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xl flex flex-col h-full overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                      <MessageSquare size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-slate-900">Technical Expert - Geodesy Africa</h2>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        Technical Documentation Access
+                      </p>
+                    </div>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Expert Knowledge Active</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+                  {chatMessages.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
+                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
+                        <Globe size={28} className="text-indigo-400" />
+                      </div>
+                      <div className="max-w-xs">
+                        <p className="text-sm font-bold text-slate-900">Technical Documentation Query</p>
+                        <p className="text-xs text-slate-500 mt-1">Submit your queries regarding African geodetic reference frames and ITRF standards based on the provided technical documentation.</p>
+                      </div>
+                    </div>
+                  )}
+                  {chatMessages.map((msg, i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={cn(
+                        "flex",
+                        msg.role === 'user' ? "justify-end" : "justify-start"
+                      )}
+                    >
+                      <div className={cn(
+                        "max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
+                        msg.role === 'user' 
+                          ? "bg-indigo-600 text-white rounded-tr-none" 
+                          : "bg-white text-slate-700 border border-slate-100 rounded-tl-none markdown-body"
+                      )}>
+                        {msg.role === 'user' ? (
+                          msg.text
+                        ) : (
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                  {isChatLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" />
+                        <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.2s]" />
+                        <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-slate-100 bg-white">
+                  <form onSubmit={handleChatSubmit} className="flex gap-3">
+                    <input 
+                      type="text" 
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Ask your question here..."
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={isChatLoading || !chatInput.trim()}
+                      className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
+                        isChatLoading || !chatInput.trim() 
+                          ? "bg-slate-100 text-slate-400" 
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
+                      )}
+                    >
+                      <Send size={20} />
+                    </button>
+                  </form>
                 </div>
               </div>
             </motion.div>
@@ -959,12 +1336,12 @@ export default function App() {
                 
                 <h2 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-3">
                   <BookOpen className="text-blue-600" />
-                  Sources & Méthodologie 📚
+                  Sources & Methodology
                 </h2>
                 
                 <div className="prose prose-slate max-w-none space-y-6 text-slate-600">
                   <p>
-                    Ce tableau de bord a été conçu pour visualiser l'état actuel des repères de référence géodésique à travers le continent africain. Les données sont issues de compilations techniques sur les réseaux GNSS nationaux et les cadres de référence internationaux (ITRF).
+                    This dashboard was designed to visualize the current state of geodetic reference frames across the African continent. The data is derived from technical compilations of national GNSS networks and international reference frames (ITRF).
                   </p>
                   
                   <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
@@ -1061,8 +1438,8 @@ export default function App() {
                       )}
                       <input 
                         type="text" 
-                        value={editingCountry.pays || ''}
-                        onChange={(e) => setEditingCountry({ ...editingCountry, pays: e.target.value })}
+                        value={editingCountry.country || ''}
+                        onChange={(e) => setEditingCountry({ ...editingCountry, country: e.target.value })}
                         className={cn(
                           "w-full bg-slate-50 border border-slate-200 rounded-xl py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none",
                           editingCountry.id && getFlagUrl(editingCountry.id) ? "pl-10 pr-4" : "px-4"
@@ -1077,8 +1454,8 @@ export default function App() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{headers.formerNetwork}</label>
                   <input 
                     type="text" 
-                    value={editingCountry.reseauAncien || ''}
-                    onChange={(e) => setEditingCountry({ ...editingCountry, reseauAncien: e.target.value })}
+                    value={editingCountry.formerNetwork || ''}
+                    onChange={(e) => setEditingCountry({ ...editingCountry, formerNetwork: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                 </div>
@@ -1087,8 +1464,8 @@ export default function App() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{headers.currentNetwork}</label>
                   <input 
                     type="text" 
-                    value={editingCountry.reseauActuel || ''}
-                    onChange={(e) => setEditingCountry({ ...editingCountry, reseauActuel: e.target.value })}
+                    value={editingCountry.currentNetwork || ''}
+                    onChange={(e) => setEditingCountry({ ...editingCountry, currentNetwork: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                 </div>
@@ -1107,25 +1484,41 @@ export default function App() {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{headers.epoch}</label>
                     <input 
                       type="text" 
-                      value={editingCountry.epoque || ''}
-                      onChange={(e) => setEditingCountry({ ...editingCountry, epoque: e.target.value })}
+                      value={editingCountry.epoch || ''}
+                      onChange={(e) => setEditingCountry({ ...editingCountry, epoch: e.target.value })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{headers.status}</label>
-                  <select 
-                    value={editingCountry.status || 'MANQUE_INFO'}
-                    onChange={(e) => setEditingCountry({ ...editingCountry, status: e.target.value as any })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                  >
-                    <option value="COMPLET">ITRF with Epoch ✅</option>
-                    <option value="SANS_EPOQUE">ITRF without Epoch ⚠️</option>
-                    <option value="MANQUE_INFO">Missing Information ❌</option>
-                    <option value="CANEVA_LOCAL">Local Network 📍</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{headers.status}</label>
+                    <select 
+                      value={editingCountry.status || 'MISSING_INFO'}
+                      onChange={(e) => setEditingCountry({ ...editingCountry, status: e.target.value as any })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    >
+                      <option value="COMPLETE">ITRF with Epoch</option>
+                      <option value="NO_EPOCH">ITRF without Epoch</option>
+                      <option value="MISSING_INFO">Missing Information</option>
+                      <option value="LOCAL_NETWORK">Local Network</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zone</label>
+                    <select 
+                      value={editingCountry.zone || 'WEST'}
+                      onChange={(e) => setEditingCountry({ ...editingCountry, zone: e.target.value as any })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    >
+                      <option value="NORTH">NORTH</option>
+                      <option value="SOUTH">SOUTH</option>
+                      <option value="EAST">EAST</option>
+                      <option value="WEST">WEST</option>
+                      <option value="CENTER">CENTER</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -1255,17 +1648,16 @@ export default function App() {
       {/* Footer */}
       <footer className="mt-auto py-8 border-t border-slate-100 text-center text-slate-400 text-xs">
         <p>© 2026 DYNAMIC GEODETIC REFERENCE FRAMES IN AFRICA</p>
-        <p className="mt-1">Interactive visualization of continental geodetic data 🌍✨</p>
+        <p className="mt-1">Interactive visualization of continental geodetic data</p>
       </footer>
     </div>
   );
 }
 
-function InfoItem({ label, value, emoji }: { label: string; value: string; emoji: string }) {
+function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-all group shadow-sm">
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-lg">{emoji}</span>
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
       </div>
       <p className={cn(

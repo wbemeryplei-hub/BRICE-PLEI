@@ -13,3 +13,33 @@
 .animate-blink-red {
   animation: blink-red 0.8s infinite;
 }
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  font-weight: 900;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1e1b4b;
+}
+
+.markdown-body h1 { font-size: 1.25rem; }
+.markdown-body h2 { font-size: 1.1rem; }
+.markdown-body h3 { font-size: 1rem; }
+
+.markdown-body p {
+  margin-bottom: 0.75rem;
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  list-style-type: disc;
+}
+
+.markdown-body li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-body strong {
+  font-weight: 700;
+  color: #312e81;
+}
