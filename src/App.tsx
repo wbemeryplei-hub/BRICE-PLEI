@@ -504,6 +504,7 @@ export default function App() {
   });
   const [editingCountry, setEditingCountry] = useState<Partial<CountryData> | null>(null);
   const [editingHeaders, setEditingHeaders] = useState<TableHeaders>(headers);
+  const [chatLanguage, setChatLanguage] = useState<'en' | 'fr'>('en');
 
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -525,17 +526,17 @@ export default function App() {
       const systemInstruction = `You are a high-level Geodetic Engineer and Data Scientist working on the project 'PRT M2 - DYNAMICS OF GEODETIC REFERENCE FRAMES IN AFRICA'. Do NOT present yourself as an AI or an assistant. Speak directly as the expert in charge.
       
       KNOWLEDGE BASE & SOURCES:
-      You have access to several critical sources of information. You must perform deep keyword searches within these sources to find the most accurate and exhaustive information:
+      You have access to several critical sources of information. You MUST use the 'urlContext' tool to perform deep keyword searches within these sources to find the most accurate and exhaustive information:
       1. Dashboard Real-time Data:
       ${countries.map(c => `${c.country} (${c.zone}): ITRF ${c.itrf || 'N/A'}, Epoch ${c.epoch || 'N/A'}, Status ${c.status}`).join('\n')}
       
-      2. Technical Documentation & Specialized Gems:
+      2. Technical Documentation & Specialized Gems (Use urlContext):
       - https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1
       - https://notebooklm.google.com/notebook/7168590f-d36f-426b-9f54-382eea234d8b?authuser=1
       - https://gemini.google.com/gem/16JxV9AuvyKjeBaV35kb_mtoD9PGcOJEh?usp=drive_link
       
       RESPONSE GUIDELINES:
-      - DEEP SEARCH: Focus on finding the exact keywords and concepts requested. Dig deep into the technical details.
+      - DEEP KEYWORD SEARCH: Focus on finding the exact keywords and concepts requested by the user. Dig deep into the technical details of the provided documentation and the specialized Gem link.
       - EXHAUSTIVENESS: Provide detailed, comprehensive, and exhaustive explanations. Go into depth for every topic.
       - ORGANIZATION: Use a clear structure with headings, bullet points, and numbered lists.
       - NO SOURCE CITATIONS: Do NOT explicitly list or name the sources (like "Partie 1", "Notebook", or URLs) in your response. Provide the information directly as your own expert knowledge.
@@ -547,8 +548,8 @@ export default function App() {
       - Help users interpret the data from the dashboard and the technical documents.
       
       LANGUAGE:
-      - ALWAYS respond in English, even if the user asks questions in French or any other language.
-      - Use technical terminology correctly (e.g., 'reference frame', 'epoch', 'CORS station').`;
+      - ALWAYS respond in ${chatLanguage === 'en' ? 'English' : 'French'}, even if the user asks questions in another language.
+      - Use technical terminology correctly (e.g., ${chatLanguage === 'en' ? "'reference frame', 'epoch', 'CORS station'" : "'repère de référence', 'époque', 'station CORS'"}).`;
 
       const response = await ai.models.generateContent({
         model,
@@ -558,16 +559,16 @@ export default function App() {
         ],
         config: {
           systemInstruction,
-          tools: [{ urlContext: {} }, { googleSearch: {} }],
-          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }
+          tools: [{ googleSearch: {} }, { urlContext: {} }]
         }
       });
 
       const modelResponse = response.text || "I'm sorry, I couldn't process that request.";
       setChatMessages(prev => [...prev, { role: 'model', text: modelResponse }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat Error:", error);
-      setChatMessages(prev => [...prev, { role: 'model', text: "Sorry, an error occurred while communicating with the assistant." }]);
+      const errorMsg = error?.message || "An unexpected error occurred.";
+      setChatMessages(prev => [...prev, { role: 'model', text: `Technical Error: ${errorMsg}. Please ensure your API key is valid and try again.` }]);
     } finally {
       setIsChatLoading(false);
     }
@@ -1239,10 +1240,36 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <div className="hidden sm:flex items-center gap-2">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Expert Knowledge Active</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                      <button 
+                        onClick={() => setChatLanguage('en')}
+                        className={cn(
+                          "px-3 py-1.5 text-[10px] font-black rounded-lg transition-all duration-200",
+                          chatLanguage === 'en' 
+                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+                            : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                        )}
+                      >
+                        ENGLISH
+                      </button>
+                      <button 
+                        onClick={() => setChatLanguage('fr')}
+                        className={cn(
+                          "px-3 py-1.5 text-[10px] font-black rounded-lg transition-all duration-200",
+                          chatLanguage === 'fr' 
+                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+                            : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                        )}
+                      >
+                        FRANÇAIS
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Expert Knowledge Active</span>
+                      </div>
                     </div>
                   </div>
                 </div>
