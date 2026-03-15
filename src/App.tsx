@@ -520,7 +520,12 @@ export default function App() {
     setIsChatLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("Gemini API Key is missing. Please check your environment settings in the AI Studio menu.");
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
       const model = "gemini-3-flash-preview";
       
       const systemInstruction = `You are a high-level Geodetic Engineer and Data Scientist working on the project 'PRT M2 - DYNAMICS OF GEODETIC REFERENCE FRAMES IN AFRICA'. Do NOT present yourself as an AI or an assistant. Speak directly as the expert in charge.
