@@ -493,7 +493,7 @@ export default function App() {
 
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'map' | 'table' | 'chat' | 'filter' | 'sources'>('map');
+  const [activeTab, setActiveTab] = useState<'map' | 'table' | 'filter' | 'sources'>('map');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -504,80 +504,6 @@ export default function App() {
   });
   const [editingCountry, setEditingCountry] = useState<Partial<CountryData> | null>(null);
   const [editingHeaders, setEditingHeaders] = useState<TableHeaders>(headers);
-  const [chatLanguage, setChatLanguage] = useState<'en' | 'fr'>('en');
-
-  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || isChatLoading) return;
-
-    const userMessage = chatInput.trim();
-    setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
-    setChatInput('');
-    setIsChatLoading(true);
-
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Gemini API Key is missing. Please check your environment settings in the AI Studio menu.");
-      }
-      
-      const ai = new GoogleGenAI({ apiKey });
-      const model = "gemini-3-flash-preview";
-      
-      const systemInstruction = `You are a high-level Geodetic Engineer and Data Scientist working on the project 'PRT M2 - DYNAMICS OF GEODETIC REFERENCE FRAMES IN AFRICA'. Do NOT present yourself as an AI or an assistant. Speak directly as the expert in charge.
-      
-      KNOWLEDGE BASE & SOURCES:
-      You have access to several critical sources of information. You MUST use the 'urlContext' tool to perform deep keyword searches within these sources to find the most accurate and exhaustive information:
-      1. Dashboard Real-time Data:
-      ${countries.map(c => `${c.country} (${c.zone}): ITRF ${c.itrf || 'N/A'}, Epoch ${c.epoch || 'N/A'}, Status ${c.status}`).join('\n')}
-      
-      2. Technical Documentation & Specialized Gems (Use urlContext):
-      - https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1
-      - https://notebooklm.google.com/notebook/7168590f-d36f-426b-9f54-382eea234d8b?authuser=1
-      - https://gemini.google.com/gem/16JxV9AuvyKjeBaV35kb_mtoD9PGcOJEh?usp=drive_link
-      
-      RESPONSE GUIDELINES:
-      - DEEP KEYWORD SEARCH: Focus on finding the exact keywords and concepts requested by the user. Dig deep into the technical details of the provided documentation and the specialized Gem link.
-      - EXHAUSTIVENESS: Provide detailed, comprehensive, and exhaustive explanations. Go into depth for every topic.
-      - ORGANIZATION: Use a clear structure with headings, bullet points, and numbered lists.
-      - NO SOURCE CITATIONS: Do NOT explicitly list or name the sources (like "Partie 1", "Notebook", or URLs) in your response. Provide the information directly as your own expert knowledge.
-      - TRUTHFULNESS: Be truthful and precise. If information is missing from all sources, state that it is not available in the current technical documentation.
-      
-      YOUR ROLE:
-      - Provide technical analysis of geodetic reference frames in Africa.
-      - Explain concepts like ITRF, AFREF, and epochs as described in the sources.
-      - Help users interpret the data from the dashboard and the technical documents.
-      
-      LANGUAGE:
-      - ALWAYS respond in ${chatLanguage === 'en' ? 'English' : 'French'}, even if the user asks questions in another language.
-      - Use technical terminology correctly (e.g., ${chatLanguage === 'en' ? "'reference frame', 'epoch', 'CORS station'" : "'repère de référence', 'époque', 'station CORS'"}).`;
-
-      const response = await ai.models.generateContent({
-        model,
-        contents: [
-          ...chatMessages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })),
-          { role: 'user', parts: [{ text: userMessage }] }
-        ],
-        config: {
-          systemInstruction,
-          tools: [{ googleSearch: {} }, { urlContext: {} }]
-        }
-      });
-
-      const modelResponse = response.text || "I'm sorry, I couldn't process that request.";
-      setChatMessages(prev => [...prev, { role: 'model', text: modelResponse }]);
-    } catch (error: any) {
-      console.error("Chat Error:", error);
-      const errorMsg = error?.message || "An unexpected error occurred.";
-      setChatMessages(prev => [...prev, { role: 'model', text: `Technical Error: ${errorMsg}. Please ensure your API key is valid and try again.` }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -731,14 +657,14 @@ export default function App() {
                 Data
               </button>
               <button 
-                onClick={() => setActiveTab('chat')}
+                onClick={() => setActiveTab('sources')}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  activeTab === 'chat' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                  activeTab === 'sources' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
                 )}
               >
-                <MessageSquare size={16} />
-                Chat Assistant
+                <BookOpen size={16} />
+                Sources
               </button>
               <button 
                 onClick={() => window.open('https://www.fig.net/searchresults.asp?q=ITRF+SENEGAL+', '_blank')}
@@ -1223,143 +1149,13 @@ export default function App() {
             </motion.div>
           )}
 
-          {activeTab === 'chat' && (
-            <motion.div 
-              key="chat-tab"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="max-w-4xl mx-auto h-[calc(100vh-220px)] min-h-[500px]"
-            >
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-xl flex flex-col h-full overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
-                      <MessageSquare size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-black text-slate-900">Technical Expert - Geodesy Africa</h2>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        Technical Documentation Access
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-                      <button 
-                        onClick={() => setChatLanguage('en')}
-                        className={cn(
-                          "px-3 py-1.5 text-[10px] font-black rounded-lg transition-all duration-200",
-                          chatLanguage === 'en' 
-                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                            : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-                        )}
-                      >
-                        ENGLISH
-                      </button>
-                      <button 
-                        onClick={() => setChatLanguage('fr')}
-                        className={cn(
-                          "px-3 py-1.5 text-[10px] font-black rounded-lg transition-all duration-200",
-                          chatLanguage === 'fr' 
-                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                            : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-                        )}
-                      >
-                        FRANÇAIS
-                      </button>
-                    </div>
-                    <div className="hidden sm:flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Expert Knowledge Active</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
-                  {chatMessages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
-                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
-                        <Globe size={28} className="text-indigo-400" />
-                      </div>
-                      <div className="max-w-xs">
-                        <p className="text-sm font-bold text-slate-900">Technical Documentation Query</p>
-                        <p className="text-xs text-slate-500 mt-1">Submit your queries regarding African geodetic reference frames and ITRF standards based on the provided technical documentation.</p>
-                      </div>
-                    </div>
-                  )}
-                  {chatMessages.map((msg, i) => (
-                    <motion.div 
-                      key={i}
-                      initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className={cn(
-                        "flex",
-                        msg.role === 'user' ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div className={cn(
-                        "max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
-                        msg.role === 'user' 
-                          ? "bg-indigo-600 text-white rounded-tr-none" 
-                          : "bg-white text-slate-700 border border-slate-100 rounded-tl-none markdown-body"
-                      )}>
-                        {msg.role === 'user' ? (
-                          msg.text
-                        ) : (
-                          <ReactMarkdown>{msg.text}</ReactMarkdown>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                  {isChatLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm flex gap-1">
-                        <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" />
-                        <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 border-t border-slate-100 bg-white">
-                  <form onSubmit={handleChatSubmit} className="flex gap-3">
-                    <input 
-                      type="text" 
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Ask your question here..."
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                    />
-                    <button 
-                      type="submit"
-                      disabled={isChatLoading || !chatInput.trim()}
-                      className={cn(
-                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
-                        isChatLoading || !chatInput.trim() 
-                          ? "bg-slate-100 text-slate-400" 
-                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
-                      )}
-                    >
-                      <Send size={20} />
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           {activeTab === 'sources' && (
             <motion.div 
               key="sources-tab"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="max-w-3xl mx-auto space-y-8"
+              className="max-w-5xl mx-auto space-y-8"
             >
               <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none text-slate-200">
@@ -1367,36 +1163,97 @@ export default function App() {
                 </div>
                 
                 <h2 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                  <BookOpen className="text-blue-600" />
-                  Sources & Methodology
+                  <BookOpen className="text-indigo-600" />
+                  Technical Sources & Documentation
                 </h2>
                 
-                <div className="prose prose-slate max-w-none space-y-6 text-slate-600">
-                  <p>
-                    This dashboard was designed to visualize the current state of geodetic reference frames across the African continent. The data is derived from technical compilations of national GNSS networks and international reference frames (ITRF).
+                <div className="prose prose-slate max-w-none space-y-8 text-slate-600">
+                  <p className="text-lg">
+                    This dashboard is built upon a compilation of technical data from international geodetic services and specialized research. Below are the primary sources and interactive documents used for this project.
                   </p>
                   
-                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                    <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
-                      <ChevronRight size={18} className="text-blue-600" />
-                      Primary Data
-                    </h3>
-                    <ul className="list-disc list-inside space-y-2">
-                      <li>AFREF (African Reference Frame) technical reports</li>
-                      <li>IERS (International Earth Rotation and Reference Systems Service) data</li>
-                      <li>Publications from national geographic services of African countries</li>
-                      <li>Inventory of CORS (Continuously Operating Reference Stations)</li>
-                    </ul>
+                  <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Source Name</th>
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Description</th>
+                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Link</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        <tr className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-slate-900">Notebook 1</td>
+                          <td className="px-6 py-4 text-sm">Comprehensive geodetic data compilation and analysis for African reference frames.</td>
+                          <td className="px-6 py-4">
+                            <a 
+                              href="https://notebooklm.google.com/notebook/574afb8b-3d81-43b8-979d-817da2fa56b5?authuser=1" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"
+                            >
+                              <ExternalLink size={14} />
+                              Open Notebook
+                            </a>
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-slate-900">Notebook 2</td>
+                          <td className="px-6 py-4 text-sm">Extended documentation on ITRF standards and regional geodetic dynamics.</td>
+                          <td className="px-6 py-4">
+                            <a 
+                              href="https://notebooklm.google.com/notebook/7168590f-d36f-426b-9f54-382eea234d8b?authuser=1" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"
+                            >
+                              <ExternalLink size={14} />
+                              Open Notebook
+                            </a>
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-slate-900">FIG Search Results</td>
+                          <td className="px-6 py-4 text-sm">International Federation of Surveyors (FIG) database for ITRF in Senegal and Africa.</td>
+                          <td className="px-6 py-4">
+                            <a 
+                              href="https://www.fig.net/searchresults.asp?q=ITRF+SENEGAL+" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"
+                            >
+                              <ExternalLink size={14} />
+                              Search FIG
+                            </a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
-                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                    <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
-                      <ChevronRight size={18} className="text-blue-600" />
-                      Classification
-                    </h3>
-                    <p className="text-sm">
-                      The classification is based on the simultaneous availability of a recent ITRF frame and a valid reference epoch, crucial elements for dynamic geodetic accuracy.
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                      <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
+                        <ChevronRight size={18} className="text-indigo-600" />
+                        Primary Data Sources
+                      </h3>
+                      <ul className="list-disc list-inside space-y-2 text-sm">
+                        <li>AFREF (African Reference Frame) technical reports</li>
+                        <li>IERS (International Earth Rotation and Reference Systems Service)</li>
+                        <li>National geographic services of African countries</li>
+                        <li>Inventory of CORS (Continuously Operating Reference Stations)</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                      <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
+                        <ChevronRight size={18} className="text-indigo-600" />
+                        Methodology
+                      </h3>
+                      <p className="text-sm">
+                        The classification is based on the simultaneous availability of a recent ITRF frame and a valid reference epoch, crucial elements for dynamic geodetic accuracy.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -1406,10 +1263,10 @@ export default function App() {
                     <p className="text-slate-900 font-medium">Wonbleon Brice Emery PLEI & El Hadji Abdoul Aziz SALL</p>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-blue-600">
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-indigo-600">
                       <Globe size={24} />
                     </div>
-                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-blue-600">
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-indigo-600">
                       <Info size={24} />
                     </div>
                   </div>
