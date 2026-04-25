@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
+import { MapContainer, TileLayer, GeoJSON, Tooltip, Marker } from 'react-leaflet';
+import L from 'leaflet';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -65,7 +67,7 @@ const getEmojiFlag = (iso3: string) => {
   return String.fromCodePoint(...[...iso2.toUpperCase()].map(c => c.charCodeAt(0) + 127397));
 };
 
-// Map Component
+/// Map Component
 const AfricaMap = ({ 
   onCountryClick, 
   selectedCountryId,
@@ -81,49 +83,17 @@ const AfricaMap = ({
   setEditingHeaders: (headers: TableHeaders) => void;
   setIsHeaderModalOpen: (open: boolean) => void;
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null);
   const [geoData, setGeoData] = useState<any>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observeTarget = containerRef.current;
-    if (!observeTarget) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
-        });
-      }
-    });
-
-    resizeObserver.observe(observeTarget);
-    return () => resizeObserver.disconnect();
-  }, []);
 
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
       .then(response => response.json())
       .then(geoJson => {
-        // Use the full list of IDs from AFRICA_DATA to ensure all countries are always drawn
         const africanIsoCodes = AFRICA_DATA.map(d => d.id);
-        // Fallback for common ID variations
         const idMap: Record<string, string> = {
-          'SDS': 'SSD',
-          'SS': 'SSD',
-          'SZL': 'SWZ',
-          'ZAR': 'COD',
-          'DRC': 'COD',
-          'KM': 'COM',
-          'MU': 'MUS',
-          'SC': 'SYC',
-          'CV': 'CPV',
-          'ST': 'STP',
-          'REU': 'REU', // Reunion (if added)
-          'MYT': 'COM'  // Mayotte
+          'SDS': 'SSD', 'SS': 'SSD', 'SZL': 'SWZ', 'ZAR': 'COD', 'DRC': 'COD', 
+          'KM': 'COM', 'MU': 'MUS', 'SC': 'SYC', 'CV': 'CPV', 'ST': 'STP', 
+          'REU': 'REU', 'MYT': 'COM'
         };
         const africa = {
           ...geoJson,
@@ -132,157 +102,68 @@ const AfricaMap = ({
             return africanIsoCodes.includes(id);
           }).map((f: any) => ({
             ...f,
-            id: idMap[f.id] || f.id // Normalize ID
+            id: idMap[f.id] || f.id
           }))
         };
         setGeoData(africa);
       });
-  }, [data]);
+  }, []);
 
-  useEffect(() => {
-    if (!geoData || !svgRef.current) return;
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-
-    const width = dimensions.width || svgRef.current.clientWidth;
-    const height = dimensions.height || svgRef.current.clientHeight;
-
-    if (width === 0 || height === 0) return;
-
-    // Use fitSize to ensure the entire continent fits perfectly in the frame with padding
-    const projection = d3.geoMercator()
-      .fitExtent([[10, 10], [width - 10, height - 10]], geoData);
-
-    const path = d3.geoPath().projection(projection);
-
-    const g = svg.append('g');
-
-    // Draw countries
-    g.selectAll('path')
-      .data(geoData.features)
-      .enter()
-      .append('path')
-      .attr('d', path as any)
-      .attr('class', (d: any) => {
-        const isSelected = selectedCountryId === d.id;
-        return cn(
-          'transition-all duration-300 cursor-pointer stroke-white hover:stroke-slate-400',
-          isSelected ? 'stroke-slate-600 stroke-2 animate-blink-red' : 'stroke-1'
-        );
-      })
-      .attr('fill', (d: any) => {
-        const country = data.find(c => c.id === d.id);
-        if (!country) return '#f1f5f9'; // Muted slate 100 for non-filtered countries
-        switch (country.status) {
-          case 'COMPLETE': return '#93c5fd'; // Soft Blue
-          case 'NO_EPOCH': return '#fde047'; // Soft Yellow
-          case 'MISSING_INFO': return '#fca5a5'; // Soft Red
-          case 'LOCAL_NETWORK': return '#c084fc'; // Soft Purple
-          case 'ACTIVE': return '#cbd5e1'; // Soft Slate
-          default: return '#f1f5f9';
-        }
-      })
-      .attr('opacity', (d: any) => {
-        const country = data.find(c => c.id === d.id);
-        return country ? 1 : 0.3; // More transparent for non-filtered countries
-      })
-      .on('click', (event, d: any) => {
-        const country = data.find(c => c.id === d.id);
-        onCountryClick(country || null);
-      })
-      .append('title')
-      .text((d: any) => d.properties.name);
-
-    // Add country names
-    g.selectAll('text')
-      .data(geoData.features)
-      .enter()
-      .append('text')
-      .attr('transform', (d: any) => {
-        const centroid = path.centroid(d);
-        return `translate(${centroid[0]}, ${centroid[1]})`;
-      })
-      .attr('text-anchor', 'middle')
-      .attr('font-size', width < 500 ? '6px' : '8px')
-      .attr('font-weight', '700')
-      .attr('fill', '#000000')
-      .attr('pointer-events', 'none')
-      .text((d: any) => {
-        const country = data.find(c => c.id === d.id);
-        if (!country) return '';
-        const flag = getEmojiFlag(country.id);
-        return `${flag} ${country.country}`;
-      });
-
-    // Add circles for small islands to make them more visible
-    const islandIds = ['CPV', 'COM', 'MUS', 'SYC', 'STP'];
+  const getStyle = (feature: any) => {
+    const id = feature.id;
+    const country = data.find(c => c.id === id);
+    const isSelected = selectedCountryId === id;
     
-    // Manual coordinates for islands that might be missing or too small in GeoJSON
-    const manualIslands = [
-      { id: 'MUS', name: 'Mauritius', coords: [57.5522, -20.3484] },
-      { id: 'SYC', name: 'Seychelles', coords: [55.4920, -4.6796] },
-      { id: 'COM', name: 'Comoros', coords: [43.3333, -11.6450] },
-      { id: 'CPV', name: 'Cape Verde', coords: [-23.0418, 16.0020] },
-      { id: 'STP', name: 'Sao Tome and Principe', coords: [6.7333, 0.1864] }
-    ];
+    let fillColor = '#f1f5f9';
+    if (country) {
+      switch (country.status) {
+        case 'COMPLETE': fillColor = '#93c5fd'; break;
+        case 'NO_EPOCH': fillColor = '#fde047'; break;
+        case 'MISSING_INFO': fillColor = '#fca5a5'; break;
+        case 'LOCAL_NETWORK': fillColor = '#c084fc'; break;
+        case 'ACTIVE': fillColor = '#cbd5e1'; break;
+      }
+    }
 
-    const islandMarkers = g.selectAll('.island-marker')
-      .data(manualIslands)
-      .enter()
-      .append('g')
-      .attr('class', 'island-marker cursor-pointer transition-all duration-300')
-      .on('click', (event, d: any) => {
-        const country = data.find(c => c.id === d.id);
+    return {
+      fillColor,
+      weight: isSelected ? 3 : 1,
+      opacity: 1,
+      color: isSelected ? '#ef4444' : 'white',
+      fillOpacity: country ? 0.7 : 0.3,
+      dashArray: isSelected ? '3' : ''
+    };
+  };
+
+  const onEachFeature = (feature: any, layer: any) => {
+    layer.on({
+      click: (e: any) => {
+        L.DomEvent.stopPropagation(e);
+        const country = data.find(c => c.id === feature.id);
         onCountryClick(country || null);
-      });
+      }
+    });
 
-    islandMarkers.append('circle')
-      .attr('cx', (d: any) => projection(d.coords as [number, number])![0])
-      .attr('cy', (d: any) => projection(d.coords as [number, number])![1])
-      .attr('r', 5)
-      .attr('fill', (d: any) => {
-        const country = data.find(c => c.id === d.id);
-        if (!country) return '#f8fafc';
-        switch (country.status) {
-          case 'COMPLETE': return '#93c5fd';
-          case 'NO_EPOCH': return '#fde047';
-          case 'MISSING_INFO': return '#fca5a5';
-          case 'LOCAL_NETWORK': return '#c084fc';
-          case 'ACTIVE': return '#cbd5e1';
-          default: return '#f1f5f9';
-        }
-      })
-      .attr('opacity', (d: any) => {
-        const country = data.find(c => c.id === d.id);
-        return country ? 1 : 0.2;
-      })
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 1.5)
-      .attr('class', (d: any) => {
-        const isSelected = selectedCountryId === d.id;
-        return cn(
-          isSelected ? 'stroke-slate-600 stroke-2 animate-blink-red' : ''
-        );
+    const country = data.find(c => c.id === feature.id);
+    if (country) {
+      layer.bindTooltip(`${country.country}`, {
+        permanent: true,
+        direction: 'center',
+        className: 'custom-tooltip'
       });
+    }
+  };
 
-    islandMarkers.append('text')
-      .attr('x', (d: any) => projection(d.coords as [number, number])![0])
-      .attr('y', (d: any) => projection(d.coords as [number, number])![1] - 8)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', width < 500 ? '5px' : '7px')
-      .attr('font-weight', '800')
-      .attr('fill', '#000000')
-      .attr('pointer-events', 'none')
-      .text((d: any) => {
-        const flag = getEmojiFlag(d.id);
-        return `${flag} ${d.name}`;
-      });
-
-  }, [geoData, selectedCountryId, onCountryClick, data, dimensions]);
+  const manualIslands = [
+    { id: 'MUS', name: 'Mauritius', coords: [-20.3484, 57.5522] as [number, number] },
+    { id: 'SYC', name: 'Seychelles', coords: [-4.6796, 55.4920] as [number, number] },
+    { id: 'COM', name: 'Comoros', coords: [-11.6450, 43.3333] as [number, number] },
+    { id: 'CPV', name: 'Cape Verde', coords: [16.0020, -23.0418] as [number, number] },
+    { id: 'STP', name: 'Sao Tome and Principe', coords: [0.1864, 6.7333] as [number, number] }
+  ];
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
+    <div className="relative w-full h-full bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
       <div className="py-2 px-4 border-b border-slate-100 bg-slate-50/50 flex justify-center items-center">
         <h2 className="text-[9px] sm:text-[11px] md:text-sm font-black text-slate-900 uppercase tracking-[0.2em] text-center">
           CARTOGRAPHY OF REFERENCE SYSTEMS IN AFRICA
@@ -290,33 +171,72 @@ const AfricaMap = ({
       </div>
       
       <div className="relative flex-1 overflow-hidden">
-        <svg ref={svgRef} className="w-full h-full" />
-        
-        {/* Draggable Statistical Summary Overlay - Always Visible */}
-        <motion.div 
-          drag
-          dragConstraints={containerRef}
-          dragMomentum={false}
-          className={cn(
-            "absolute z-20 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
-            dimensions.width < 640 ? "top-2 right-2" : "top-4 right-4 min-w-[150px]"
-          )}
+        <MapContainer 
+          center={[1, 18]} 
+          zoom={3} 
+          style={{ height: '100%', width: '100%' }}
+          zoomControl={true}
+          attributionControl={false}
+          className="z-0"
         >
-          <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1 flex items-center justify-between">
-            <span>Statistics</span>
-            <div className="flex flex-col gap-0.5">
-              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
-              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
-            </div>
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          {geoData && (
+            <GeoJSON 
+              key={JSON.stringify(selectedCountryId)}
+              data={geoData} 
+              style={getStyle}
+              onEachFeature={onEachFeature}
+            />
+          )}
+
+          {manualIslands.map(island => {
+            const country = data.find(c => c.id === island.id);
+            if (!country) return null;
+            
+            let color = '#f1f5f9';
+            switch (country.status) {
+              case 'COMPLETE': color = '#93c5fd'; break;
+              case 'NO_EPOCH': color = '#fde047'; break;
+              case 'MISSING_INFO': color = '#fca5a5'; break;
+              case 'LOCAL_NETWORK': color = '#c084fc'; break;
+              case 'ACTIVE': color = '#cbd5e1'; break;
+            }
+
+            return (
+              <Marker 
+                key={island.id} 
+                position={island.coords}
+                icon={L.divIcon({
+                  className: 'custom-div-icon',
+                  html: `<div style="background-color: ${color}; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
+                  iconSize: [10, 10],
+                  iconAnchor: [5, 5]
+                })}
+                eventHandlers={{
+                  click: () => onCountryClick(country)
+                }}
+              >
+                <Tooltip permanent direction="top" offset={[0, -5]} className="custom-tooltip">
+                  {island.name}
+                </Tooltip>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+        
+        {/* Statistics and Legend can remain as overlays */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="absolute top-4 right-4 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[150px] pointer-events-auto"
+        >
+          <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1">
+            Statistics
           </div>
           <table className="w-full">
-            <thead>
-              <tr className="text-slate-400 text-left">
-                <th className="font-black uppercase pb-1">Status</th>
-                <th className="font-black uppercase pb-1 text-right">Qty</th>
-                <th className="font-black uppercase pb-1 text-right">%</th>
-              </tr>
-            </thead>
             <tbody className="divide-y divide-slate-50">
               {[
                 { label: 'ITRF with Epoch', status: 'COMPLETE', color: 'bg-[#93c5fd]' },
@@ -325,15 +245,13 @@ const AfricaMap = ({
                 { label: 'Local Network', status: 'LOCAL_NETWORK', color: 'bg-[#c084fc]' }
               ].map((item) => {
                 const count = data.filter(c => c.status === item.status).length;
-                const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : 0;
                 return (
-                  <tr key={item.status} className="group">
+                  <tr key={item.status}>
                     <td className="py-0.5 flex items-center gap-1">
-                      <div className={cn("w-1 h-1 rounded-full", item.color)} />
-                      <span className="font-medium">{item.label}</span>
+                      <div className={cn("w-1.5 h-1.5 rounded-full", item.color)} />
+                      <span>{item.label}</span>
                     </td>
-                    <td className="py-0.5 text-right font-mono font-bold text-slate-900">{count}</td>
-                    <td className="py-0.5 text-right font-mono text-slate-500">{percentage}%</td>
+                    <td className="py-0.5 text-right font-bold">{count}</td>
                   </tr>
                 );
               })}
@@ -341,68 +259,16 @@ const AfricaMap = ({
           </table>
         </motion.div>
 
-        {/* Draggable Legend Overlay - Always Visible, Fixed Bottom Left */}
         <motion.div 
-          drag
-          dragConstraints={containerRef}
-          dragMomentum={false}
-          className={cn(
-            "absolute z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
-            dimensions.width < 640 ? "bottom-2 left-2" : "bottom-4 left-4"
-          )}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="absolute bottom-4 left-4 z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg pointer-events-auto"
         >
-          <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider flex items-center justify-between">
-            <span>Legend</span>
-            <div className="flex flex-col gap-0.5">
-              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
-              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#93c5fd] border border-blue-400" />
-            <span>ITRF with Epoch</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#fde047] border border-yellow-400" />
-            <span>ITRF without Epoch</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#fca5a5] border border-red-400" />
-            <span>Missing Info</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#c084fc] border border-purple-400" />
-            <span>Local Network</span>
-          </div>
-        </motion.div>
-
-        {/* Draggable Credits Overlay - Always Visible, Fixed Bottom Right */}
-        <motion.div 
-          drag
-          dragConstraints={containerRef}
-          dragMomentum={false}
-          className={cn(
-            "absolute z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[9px] text-slate-700 shadow-lg cursor-move active:shadow-2xl transition-shadow",
-            dimensions.width < 640 ? "bottom-2 right-2" : "bottom-4 right-4"
-          )}
-        >
-          <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-2">
-            <span>Authors</span>
-            <div className="flex flex-col gap-0.5">
-              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
-              <div className="w-2.5 h-0.5 bg-slate-300 rounded-full" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <User size={10} className="text-indigo-600" />
-              <span className="font-bold text-slate-900">W. B. E. PLEI</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <User size={10} className="text-indigo-600" />
-              <span className="font-bold text-slate-900">E. H. A. A. SALL</span>
-            </div>
-          </div>
+          <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider">Legend</div>
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#93c5fd]" /><span>ITRF with Epoch</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#fde047]" /><span>ITRF without Epoch</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#fca5a5]" /><span>Missing Info</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#c084fc]" /><span>Local Network</span></div>
         </motion.div>
       </div>
     </div>
@@ -531,6 +397,35 @@ export default function App() {
       link.click();
     } catch (err) {
       console.error('oops, something went wrong!', err);
+    }
+  };
+
+  const handleCountrySelect = (country: CountryData | null) => {
+    setSelectedCountry(country);
+    if (country && 'speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(country.country);
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Try to find an African English voice (South Africa, Nigeria, Kenya etc.)
+      const africanVoice = voices.find(v => 
+        v.lang.startsWith('en') && 
+        (v.lang.includes('ZA') || v.lang.includes('NG') || v.lang.includes('KE') || 
+         v.name.toLowerCase().includes('south africa') || v.name.toLowerCase().includes('nigeria') ||
+         v.name.toLowerCase().includes('kenya'))
+      );
+      
+      if (africanVoice) {
+        utterance.voice = africanVoice;
+      } else {
+        utterance.lang = 'en-US';
+      }
+      
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
     }
   };
 
@@ -731,7 +626,7 @@ export default function App() {
                 </div>
                 <div className="relative flex-1" ref={mapContainerRef}>
                   <AfricaMap 
-                    onCountryClick={setSelectedCountry} 
+                    onCountryClick={handleCountrySelect} 
                     selectedCountryId={selectedCountry?.id || null} 
                     data={filteredData}
                     headers={headers}
@@ -1003,7 +898,7 @@ export default function App() {
                           key={country.id}
                           className="hover:bg-slate-50 transition-colors group cursor-pointer"
                           onClick={() => {
-                            setSelectedCountry(country);
+                            handleCountrySelect(country);
                             setActiveTab('map');
                           }}
                         >
