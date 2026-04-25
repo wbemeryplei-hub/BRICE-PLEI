@@ -74,7 +74,9 @@ const AfricaMap = ({
   data,
   headers,
   setEditingHeaders,
-  setIsHeaderModalOpen
+  setIsHeaderModalOpen,
+  statusColors,
+  setStatusColors
 }: { 
   onCountryClick: (country: CountryData | null) => void;
   selectedCountryId: string | null;
@@ -82,6 +84,8 @@ const AfricaMap = ({
   headers: TableHeaders;
   setEditingHeaders: (headers: TableHeaders) => void;
   setIsHeaderModalOpen: (open: boolean) => void;
+  statusColors: Record<string, string>;
+  setStatusColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }) => {
   const [geoData, setGeoData] = useState<any>(null);
 
@@ -116,13 +120,7 @@ const AfricaMap = ({
     
     let fillColor = '#f1f5f9';
     if (country) {
-      switch (country.status) {
-        case 'COMPLETE': fillColor = '#93c5fd'; break;
-        case 'NO_EPOCH': fillColor = '#fde047'; break;
-        case 'MISSING_INFO': fillColor = '#fca5a5'; break;
-        case 'LOCAL_NETWORK': fillColor = '#c084fc'; break;
-        case 'ACTIVE': fillColor = '#cbd5e1'; break;
-      }
+      fillColor = statusColors[country.status] || '#f1f5f9';
     }
 
     return {
@@ -162,6 +160,10 @@ const AfricaMap = ({
     { id: 'STP', name: 'Sao Tome and Principe', coords: [0.1864, 6.7333] as [number, number] }
   ];
 
+  const handleColorChange = (status: string, color: string) => {
+    setStatusColors(prev => ({ ...prev, [status]: color }));
+  };
+
   return (
     <div className="relative w-full h-full bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
       <div className="py-2 px-4 border-b border-slate-100 bg-slate-50/50 flex justify-center items-center">
@@ -185,7 +187,7 @@ const AfricaMap = ({
           />
           {geoData && (
             <GeoJSON 
-              key={JSON.stringify(selectedCountryId)}
+              key={JSON.stringify(selectedCountryId) + JSON.stringify(statusColors)}
               data={geoData} 
               style={getStyle}
               onEachFeature={onEachFeature}
@@ -196,18 +198,11 @@ const AfricaMap = ({
             const country = data.find(c => c.id === island.id);
             if (!country) return null;
             
-            let color = '#f1f5f9';
-            switch (country.status) {
-              case 'COMPLETE': color = '#93c5fd'; break;
-              case 'NO_EPOCH': color = '#fde047'; break;
-              case 'MISSING_INFO': color = '#fca5a5'; break;
-              case 'LOCAL_NETWORK': color = '#c084fc'; break;
-              case 'ACTIVE': color = '#cbd5e1'; break;
-            }
+            const color = statusColors[country.status] || '#f1f5f9';
 
             return (
               <Marker 
-                key={island.id} 
+                key={island.id + JSON.stringify(statusColors)} 
                 position={island.coords}
                 icon={L.divIcon({
                   className: 'custom-div-icon',
@@ -231,7 +226,7 @@ const AfricaMap = ({
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="absolute top-4 right-4 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[150px] pointer-events-auto"
+          className="absolute top-4 right-4 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[180px] pointer-events-auto"
         >
           <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1">
             Statistics
@@ -239,19 +234,28 @@ const AfricaMap = ({
           <table className="w-full">
             <tbody className="divide-y divide-slate-50">
               {[
-                { label: 'ITRF with Epoch', status: 'COMPLETE', color: 'bg-[#93c5fd]' },
-                { label: 'ITRF without Epoch', status: 'NO_EPOCH', color: 'bg-[#fde047]' },
-                { label: 'Missing Info', status: 'MISSING_INFO', color: 'bg-[#fca5a5]' },
-                { label: 'Local Network', status: 'LOCAL_NETWORK', color: 'bg-[#c084fc]' }
+                { label: 'ITRF with Epoch', status: 'COMPLETE' },
+                { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
+                { label: 'Missing Info', status: 'MISSING_INFO' },
+                { label: 'Local Network', status: 'LOCAL_NETWORK' }
               ].map((item) => {
                 const count = data.filter(c => c.status === item.status).length;
+                const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : '0.0';
                 return (
-                  <tr key={item.status}>
-                    <td className="py-0.5 flex items-center gap-1">
-                      <div className={cn("w-1.5 h-1.5 rounded-full", item.color)} />
-                      <span>{item.label}</span>
+                  <tr key={item.status} className="group">
+                    <td className="py-1 flex items-center gap-1.5">
+                      <div 
+                        className="w-2 h-2 rounded-full shadow-sm" 
+                        style={{ backgroundColor: statusColors[item.status] }} 
+                      />
+                      <span className="text-slate-600 truncate">{item.label}</span>
                     </td>
-                    <td className="py-0.5 text-right font-bold">{count}</td>
+                    <td className="py-1 text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold text-slate-900">{count}</span>
+                        <span className="text-[8px] text-slate-400 font-medium">{percentage}%</span>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -264,11 +268,32 @@ const AfricaMap = ({
           animate={{ opacity: 1, x: 0 }}
           className="absolute bottom-4 left-4 z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg pointer-events-auto"
         >
-          <div className="font-black mb-1 text-indigo-900 uppercase tracking-wider">Legend</div>
-          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#93c5fd]" /><span>ITRF with Epoch</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#fde047]" /><span>ITRF without Epoch</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#fca5a5]" /><span>Missing Info</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#c084fc]" /><span>Local Network</span></div>
+          <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-4">
+            <span>Legend</span>
+            <span className="text-[8px] text-slate-400 font-normal">Click color to edit</span>
+          </div>
+          {[
+            { label: 'ITRF with Epoch', status: 'COMPLETE' },
+            { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
+            { label: 'Missing Info', status: 'MISSING_INFO' },
+            { label: 'Local Network', status: 'LOCAL_NETWORK' }
+          ].map(item => (
+            <div key={item.status} className="flex items-center gap-2 group cursor-pointer relative">
+               <div className="relative w-3.5 h-3.5">
+                  <input 
+                    type="color" 
+                    value={statusColors[item.status]} 
+                    onChange={(e) => handleColorChange(item.status, e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div 
+                    className="absolute inset-0 rounded-full border border-white shadow-sm group-hover:scale-110 transition-transform" 
+                    style={{ backgroundColor: statusColors[item.status] }} 
+                  />
+               </div>
+               <span className="group-hover:text-indigo-600 transition-colors">{item.label}</span>
+            </div>
+          ))}
         </motion.div>
       </div>
     </div>
@@ -360,6 +385,13 @@ export default function App() {
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'table' | 'filter' | 'sources'>('map');
+  const [statusColors, setStatusColors] = useState<Record<string, string>>({
+    'COMPLETE': '#93c5fd',
+    'NO_EPOCH': '#fde047',
+    'MISSING_INFO': '#fca5a5',
+    'LOCAL_NETWORK': '#c084fc',
+    'ACTIVE': '#cbd5e1'
+  });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -632,6 +664,8 @@ export default function App() {
                     headers={headers}
                     setEditingHeaders={setEditingHeaders}
                     setIsHeaderModalOpen={setIsHeaderModalOpen}
+                    statusColors={statusColors}
+                    setStatusColors={setStatusColors}
                   />
                 </div>
               </div>
@@ -757,18 +791,27 @@ export default function App() {
                 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: 'ITRF with Epoch', status: 'COMPLETE', color: 'bg-blue-50 text-blue-700 border-blue-100' },
-                    { label: 'ITRF without Epoch', status: 'NO_EPOCH', color: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
-                    { label: 'Missing Info', status: 'MISSING_INFO', color: 'bg-red-50 text-red-700 border-red-100' },
-                    { label: 'Local Network', status: 'LOCAL_NETWORK', color: 'bg-purple-50 text-purple-700 border-purple-100' }
+                    { label: 'ITRF with Epoch', status: 'COMPLETE' },
+                    { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
+                    { label: 'Missing Info', status: 'MISSING_INFO' },
+                    { label: 'Local Network', status: 'LOCAL_NETWORK' }
                   ].map((item) => {
                     const count = filteredData.filter(c => c.status === item.status).length;
                     const percentage = filteredData.length > 0 ? ((count / filteredData.length) * 100).toFixed(1) : 0;
+                    const color = statusColors[item.status] || '#cbd5e1';
                     return (
-                      <div key={item.status} className={cn("p-4 rounded-2xl border transition-all", item.color)}>
+                      <div 
+                        key={item.status} 
+                        className="p-4 rounded-2xl border transition-all"
+                        style={{ 
+                          backgroundColor: `${color}15`, // Light opacity
+                          borderColor: `${color}40`,
+                          color: color === '#fde047' ? '#a16207' : color // Darker for yellow text
+                        }}
+                      >
                         <div className="text-[10px] font-black uppercase tracking-wider mb-1 opacity-70">{item.label}</div>
                         <div className="flex items-end gap-2">
-                          <span className="text-2xl font-black leading-none">{count}</span>
+                          <span className="text-2xl font-black leading-none" style={{ color }}>{count}</span>
                           <span className="text-xs font-bold opacity-60 mb-0.5">{percentage}%</span>
                         </div>
                       </div>
