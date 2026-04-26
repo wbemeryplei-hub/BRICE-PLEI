@@ -708,6 +708,57 @@ export default function App() {
         }
       });
 
+      // Add Disclaimer at the end of the report
+      const renderDisclaimer = (yStart: number) => {
+        const disclaimerTitle = "KEY INFO : ";
+        const disclaimerText = "Some information may be incorrect or outdated. If so, please notify us or update it yourself and let us know.";
+        
+        doc.setFont('times', 'bold');
+        doc.setFontSize(12);
+        
+        const margin = 40;
+        const textWidth = pageWidth - (margin * 2);
+        const titleWidth = doc.getTextWidth(disclaimerTitle);
+        const fullText = disclaimerTitle + disclaimerText;
+        const lines = doc.splitTextToSize(fullText, textWidth);
+        
+        // Center the block
+        let currentY = yStart;
+        lines.forEach((line: string, index: number) => {
+          const lineWidth = doc.getTextWidth(line);
+          const xPos = (pageWidth - lineWidth) / 2;
+          
+          if (index === 0 && line.startsWith(disclaimerTitle)) {
+            // Render "KEY INFO :" in red
+            doc.setFontSize(12);
+            doc.setTextColor(220, 38, 38);
+            doc.text(disclaimerTitle, xPos, currentY);
+            
+            // Render the rest of the first line in gray
+            const lineWithoutTitle = line.substring(disclaimerTitle.length);
+            doc.setTextColor(107, 114, 128); // slate-500 gray
+            doc.text(lineWithoutTitle, xPos + titleWidth, currentY);
+          } else {
+            // Subsequent lines in gray
+            doc.setTextColor(107, 114, 128);
+            doc.text(line, xPos, currentY);
+          }
+          currentY += 6;
+        });
+        
+        doc.setTextColor(0, 0, 0); // Reset color
+      };
+
+      const lastY = (doc as any).lastAutoTable?.finalY || 100;
+      const disclaimerNeededSpace = 20;
+      
+      if (lastY + disclaimerNeededSpace > pageHeight - 40) {
+        doc.addPage();
+        renderDisclaimer(50);
+      } else {
+        renderDisclaimer(lastY + 25);
+      }
+
       const totalPDFPages = (doc as any).internal.getNumberOfPages();
       for(let i = 1; i <= totalPDFPages; i++) {
         addPageDecorations(doc, i, totalPDFPages);
