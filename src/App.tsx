@@ -667,22 +667,42 @@ export default function App() {
       autoTable(doc, {
         startY: 40,
         head: [['Flag', 'Country', 'Former Net.', 'Current Net.', 'ITRF', 'Epoch', 'Status']],
-        body: tableDataForPDF.map(c => ['', c.country, c.formerNetwork || '---', c.currentNetwork || '---', c.itrf || 'N/A', c.epoch || 'N/A', getStatusLabel(c.status)]),
+        body: tableDataForPDF.map(c => ['', c.country, c.formerNetwork || '---', c.currentNetwork || '---', c.itrf || 'N/A', c.epoch || 'N/A', `    ${getStatusLabel(c.status)}`]), // Added spaces for the dot
         headStyles: { fillColor: [37, 99, 235], fontSize: 8, fontStyle: 'bold', halign: 'center' },
         alternateRowStyles: { fillColor: [250, 250, 250] },
         styles: { fontSize: 8, cellPadding: 3, valign: 'middle' },
         columnStyles: { 
           0: { cellWidth: 12, halign: 'center' }, 
           1: { fontStyle: 'bold', cellWidth: 35 },
-          6: { fontStyle: 'bold' }
+          6: { fontStyle: 'bold', cellWidth: 40 }
         },
         didDrawCell: (dataCell: any) => {
-          if (dataCell.section === 'body' && dataCell.column.index === 0) {
-            const country = tableDataForPDF[dataCell.row.index];
-            if (country.flagBase64) {
-              const x = dataCell.cell.x + 2;
-              const y = dataCell.cell.y + 1.5;
-              try { doc.addImage(country.flagBase64, 'PNG', x, y, 8, 5.2); } catch (e) {}
+          if (dataCell.section === 'body') {
+            if (dataCell.column.index === 0) {
+              const country = tableDataForPDF[dataCell.row.index];
+              if (country.flagBase64) {
+                const x = dataCell.cell.x + 2;
+                const y = dataCell.cell.y + (dataCell.cell.height - 5.2) / 2;
+                try { doc.addImage(country.flagBase64, 'PNG', x, y, 8, 5.2); } catch (e) {}
+              }
+            } else if (dataCell.column.index === 6) {
+              // Add a color dot for the status that matches the current legend
+              const country = tableDataForPDF[dataCell.row.index];
+              const colorHex = statusColors[country.status] || '#cbd5e1';
+              
+              // Convert hex to RGB for jsPDF
+              const r = parseInt(colorHex.slice(1, 3), 16);
+              const g = parseInt(colorHex.slice(3, 5), 16);
+              const b = parseInt(colorHex.slice(5, 7), 16);
+              
+              const x = dataCell.cell.x + 3.5;
+              const y = dataCell.cell.y + dataCell.cell.height / 2;
+              
+              doc.setFillColor(r, g, b);
+              doc.circle(x, y, 1.5, 'F');
+              doc.setDrawColor(200, 200, 200);
+              doc.setLineWidth(0.1);
+              doc.circle(x, y, 1.5, 'S');
             }
           }
         }
