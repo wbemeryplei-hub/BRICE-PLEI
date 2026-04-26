@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Filter,
   Download,
+  FileText,
   Plus,
   Edit2,
   Trash2,
@@ -32,7 +33,7 @@ import {
 } from 'lucide-react';
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { MapContainer, TileLayer, GeoJSON, Tooltip, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Tooltip, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
 import { clsx, type ClassValue } from 'clsx';
@@ -40,6 +41,8 @@ import { twMerge } from 'tailwind-merge';
 
 import * as XLSX from 'xlsx';
 import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -76,7 +79,9 @@ const AfricaMap = ({
   setEditingHeaders,
   setIsHeaderModalOpen,
   statusColors,
-  setStatusColors
+  setStatusColors,
+  mapRef,
+  africanGeoData
 }: { 
   onCountryClick: (country: CountryData | null) => void;
   selectedCountryId: string | null;
@@ -86,33 +91,9 @@ const AfricaMap = ({
   setIsHeaderModalOpen: (open: boolean) => void;
   statusColors: Record<string, string>;
   setStatusColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  mapRef: React.MutableRefObject<L.Map | null>;
+  africanGeoData: any;
 }) => {
-  const [geoData, setGeoData] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
-      .then(response => response.json())
-      .then(geoJson => {
-        const africanIsoCodes = AFRICA_DATA.map(d => d.id);
-        const idMap: Record<string, string> = {
-          'SDS': 'SSD', 'SS': 'SSD', 'SZL': 'SWZ', 'ZAR': 'COD', 'DRC': 'COD', 
-          'KM': 'COM', 'MU': 'MUS', 'SC': 'SYC', 'CV': 'CPV', 'ST': 'STP', 
-          'REU': 'REU', 'MYT': 'COM'
-        };
-        const africa = {
-          ...geoJson,
-          features: geoJson.features.filter((f: any) => {
-            const id = idMap[f.id] || f.id;
-            return africanIsoCodes.includes(id);
-          }).map((f: any) => ({
-            ...f,
-            id: idMap[f.id] || f.id
-          }))
-        };
-        setGeoData(africa);
-      });
-  }, []);
-
   const getStyle = (feature: any) => {
     const id = feature.id;
     const country = data.find(c => c.id === id);
@@ -131,6 +112,27 @@ const AfricaMap = ({
       fillOpacity: country ? 0.7 : 0.3,
       dashArray: isSelected ? '3' : ''
     };
+  };
+
+  const MapInstanceCollector = () => {
+    const map = useMap();
+    useEffect(() => {
+      mapRef.current = map;
+    }, [map]);
+    return null;
+  };
+
+  const MapBoundsController = () => {
+    const map = useMap();
+    useEffect(() => {
+      if (!africanGeoData) return;
+      // Only fit to continent on load or reset
+      const bounds = L.geoJSON(africanGeoData).getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [10, 10] });
+      }
+    }, [africanGeoData, map]);
+    return null;
   };
 
   const onEachFeature = (feature: any, layer: any) => {
@@ -185,10 +187,12 @@ const AfricaMap = ({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          {geoData && (
+          <MapBoundsController />
+          <MapInstanceCollector />
+          {africanGeoData && (
             <GeoJSON 
               key={JSON.stringify(selectedCountryId) + JSON.stringify(statusColors)}
-              data={geoData} 
+              data={africanGeoData} 
               style={getStyle}
               onEachFeature={onEachFeature}
             />
@@ -301,6 +305,7 @@ const AfricaMap = ({
 };
 
 export default function App() {
+  const mapRef = useRef<L.Map | null>(null);
   const [countries, setCountries] = useState<CountryData[]>(AFRICA_DATA);
   const [headers, setHeaders] = useState<TableHeaders>({
     country: 'Country',
@@ -310,6 +315,58 @@ export default function App() {
     epoch: 'Epoch',
     status: 'Status'
   });
+  const [africanGeoData, setAfricanGeoData] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    itrf: '',
+    status: '',
+    country: '',
+    zone: '',
+    epoch: ''
+  });
+
+  const filteredData = useMemo(() => {
+    return countries.filter(c => {
+      const matchesSearch = searchQuery === '' || 
+        c.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.itrf.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.currentNetwork && c.currentNetwork.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesItrf = filters.itrf === '' || c.itrf === filters.itrf;
+      const matchesStatus = filters.status === '' || c.status === filters.status;
+      const matchesCountry = filters.country === '' || c.country.toLowerCase().includes(filters.country.toLowerCase());
+      const matchesZone = filters.zone === '' || c.zone === filters.zone;
+
+      const matchesEpoch = filters.epoch === '' || c.epoch === filters.epoch;
+
+      return matchesSearch && matchesItrf && matchesStatus && matchesCountry && matchesZone && matchesEpoch;
+    });
+  }, [searchQuery, countries, filters]);
+
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
+      .then(response => response.json())
+      .then(geoJson => {
+        const africanIsoCodes = AFRICA_DATA.map(d => d.id);
+        const idMap: Record<string, string> = {
+          'SDS': 'SSD', 'SS': 'SSD', 'SZL': 'SWZ', 'ZAR': 'COD', 'DRC': 'COD', 
+          'KM': 'COM', 'MU': 'MUS', 'SC': 'SYC', 'CV': 'CPV', 'ST': 'STP', 
+          'REU': 'REU', 'MYT': 'COM'
+        };
+        const africa = {
+          ...geoJson,
+          features: geoJson.features.filter((f: any) => {
+            const id = idMap[f.id] || f.id;
+            return africanIsoCodes.includes(id);
+          }).map((f: any) => ({
+            ...f,
+            id: idMap[f.id] || f.id
+          }))
+        };
+        setAfricanGeoData(africa);
+      });
+  }, []);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Load data from server
@@ -383,7 +440,6 @@ export default function App() {
   };
 
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'table' | 'filter' | 'sources'>('map');
   const [statusColors, setStatusColors] = useState<Record<string, string>>({
     'COMPLETE': '#93c5fd',
@@ -394,12 +450,6 @@ export default function App() {
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    itrf: '',
-    status: '',
-    country: '',
-    zone: ''
-  });
   const [editingCountry, setEditingCountry] = useState<Partial<CountryData> | null>(null);
   const [editingHeaders, setEditingHeaders] = useState<TableHeaders>(headers);
 
@@ -432,50 +482,257 @@ export default function App() {
     }
   };
 
-  const handleCountrySelect = (country: CountryData | null) => {
-    setSelectedCountry(country);
-    if (country && 'speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
+  const exportReportPDF = async () => {
+    if (mapContainerRef.current === null) return;
+    
+    // UI Feedback
+    alert("Exporting technical report... Please wait.");
+
+    const imageUrlToBase64 = async (url: string): Promise<string | null> => {
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        return null;
+      }
+    };
+
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      const utterance = new SpeechSynthesisUtterance(country.country);
-      const voices = window.speechSynthesis.getVoices();
+      const getZoneLabel = (z: string) => {
+        const zones: Record<string, string> = {
+          'NORTH': 'NORTHERN AFRICA', 'SOUTH': 'SOUTHERN AFRICA',
+          'EAST': 'EASTERN AFRICA', 'WEST': 'WESTERN AFRICA', 'CENTER': 'CENTRAL AFRICA'
+        };
+        return zones[z] || z;
+      };
+
+      const getStatusLabel = (s: string) => {
+        const statuses: Record<string, string> = {
+          'COMPLETE': 'ITRF WITH EPOCH', 'NO_EPOCH': 'ITRF WITHOUT EPOCH',
+          'MISSING_INFO': 'MISSING INFO', 'LOCAL_NETWORK': 'LOCAL NETWORK'
+        };
+        return statuses[s] || s.replace('_', ' ');
+      };
+
+      const activeFilters = [];
+      if (filters.zone) activeFilters.push(getZoneLabel(filters.zone));
+      if (filters.status) activeFilters.push(getStatusLabel(filters.status));
+      if (filters.itrf) activeFilters.push(`ITRF ${filters.itrf}`);
       
-      // Try to find an African English voice (South Africa, Nigeria, Kenya etc.)
-      const africanVoice = voices.find(v => 
-        v.lang.startsWith('en') && 
-        (v.lang.includes('ZA') || v.lang.includes('NG') || v.lang.includes('KE') || 
-         v.name.toLowerCase().includes('south africa') || v.name.toLowerCase().includes('nigeria') ||
-         v.name.toLowerCase().includes('kenya'))
-      );
-      
-      if (africanVoice) {
-        utterance.voice = africanVoice;
-      } else {
-        utterance.lang = 'en-US';
+      // If filtering by country text, include countries in title
+      if (filters.country) {
+        const uniqueCountries = Array.from(new Set(filteredData.map(c => c.country)));
+        if (uniqueCountries.length > 0) {
+          if (uniqueCountries.length <= 6) {
+            activeFilters.push(uniqueCountries.join(' & '));
+          } else {
+            activeFilters.push(`${uniqueCountries.length} COUNTRIES`);
+          }
+        }
       }
       
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      window.speechSynthesis.speak(utterance);
+      const reportTitleSuffix = activeFilters.length > 0 ? activeFilters.join(' / ') : 'CONTINENTAL SUMMARY';
+      
+      const author1 = "Wonbleon Brice Emery PLEI";
+      const author2 = "El Hadji Abdoul Aziz SALL";
+
+      // --- HELPER: HEADER/FOOTER ---
+      const addPageDecorations = (doc: jsPDF, pageIndex: number, totalPages: number) => {
+        doc.setPage(pageIndex);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        
+        // Vertical authors in bottom left
+        doc.text(author1, 14, pageHeight - 12);
+        doc.text(author2, 14, pageHeight - 8);
+        
+        doc.text(reportTitleSuffix.toUpperCase(), pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text(`${pageIndex} / ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+        doc.setFillColor(37, 99, 235);
+        doc.rect(14, 8, 5, 0.5, 'F');
+      };
+
+      // --- MAP CAPTURE LOGIC (ZOOM TO SELECTION FOR REPORT) ---
+      let mapDataUrl = "";
+      if (mapRef.current && africanGeoData) {
+        const currentView = { center: mapRef.current.getCenter(), zoom: mapRef.current.getZoom() };
+        
+        // Find selection bounds
+        const activeIds = filteredData.map(c => c.id);
+        const activeFeatures = africanGeoData.features.filter((f: any) => activeIds.includes(f.id));
+        
+        if (activeFeatures.length > 0) {
+          const bounds = L.geoJSON(activeFeatures as any).getBounds();
+          if (bounds.isValid()) {
+            mapRef.current.fitBounds(bounds, { padding: [30, 30], animate: false });
+          }
+        } else {
+          const bounds = L.geoJSON(africanGeoData).getBounds();
+          if (bounds.isValid()) {
+            mapRef.current.fitBounds(bounds, { padding: [10, 10], animate: false });
+          }
+        }
+
+        // Wait to stabilize
+        await new Promise(r => setTimeout(r, 1500));
+
+        try {
+          mapDataUrl = await toPng(mapContainerRef.current!, { 
+            cacheBust: true, 
+            backgroundColor: '#ffffff', 
+            width: 1013, 
+            height: 635,
+            // @ts-ignore
+            useCORS: true, 
+            pixelRatio: 3, 
+            skipFonts: true
+          });
+        } catch (e) {
+          console.error("Map capture failed", e);
+        }
+
+        // RESTORE APP VIEW
+        mapRef.current.setView(currentView.center, currentView.zoom, { animate: false });
+      }
+
+      // 1. --- COVER PAGE ---
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(32);
+      doc.setTextColor(26, 26, 26);
+      doc.text("GEODETIC REFERENCE", pageWidth / 2, 60, { align: 'center' });
+      doc.text("FRAMES IN AFRICA", pageWidth / 2, 73, { align: 'center' });
+      
+      doc.setFontSize(16);
+      doc.setTextColor(37, 99, 235);
+      doc.text(`TECHNICAL DATA REPORT: ${reportTitleSuffix}`, pageWidth / 2, 85, { align: 'center' });
+      
+      doc.setDrawColor(240, 240, 240);
+      doc.line(30, 95, pageWidth - 30, 95);
+      
+      if (mapDataUrl) {
+        // High-resolution centered map in the report (Format 1013x635)
+        const targetW = pageWidth - 20; // Maximum usable width with margins
+        const targetH = (635 / 1013) * targetW;
+        const mapX = (pageWidth - targetW) / 2;
+        doc.addImage(mapDataUrl, 'PNG', mapX, 102, targetW, targetH, undefined, 'FAST');
+      }
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont('helvetica', 'normal');
+      doc.text("INSTITUTION", 30, pageHeight - 55);
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'bold');
+      doc.text("UNIVERSITY IBA DER THIAM OF THIÈS (UIDT)", 30, pageHeight - 50);
+      doc.text("CIVIL ENGINEERING DEPARTMENT (UFR-SI)", 30, pageHeight - 45);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text("REPORT DATE", pageWidth - 30, pageHeight - 55, { align: 'right' });
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'bold');
+      doc.text(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), pageWidth - 30, pageHeight - 50, { align: 'right' });
+
+      // 2. --- TECHNICAL DATA TABLE ---
+      doc.addPage();
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(26, 26, 26);
+      doc.text("TECHNICAL PARAMETERS SUMMARY", 14, 25);
+      
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Exhaustive technical data for selected African countries.`, 14, 32);
+
+      const tableDataForPDF = await Promise.all(filteredData.map(async (c) => {
+        const flagUrl = getFlagUrl(c.id);
+        const flagBase64 = flagUrl ? await imageUrlToBase64(flagUrl) : null;
+        return { ...c, flagBase64 };
+      }));
+
+      autoTable(doc, {
+        startY: 40,
+        head: [['Flag', 'Country', 'Former Net.', 'Current Net.', 'ITRF', 'Epoch', 'Status']],
+        body: tableDataForPDF.map(c => ['', c.country, c.formerNetwork || '---', c.currentNetwork || '---', c.itrf || 'N/A', c.epoch || 'N/A', getStatusLabel(c.status)]),
+        headStyles: { fillColor: [37, 99, 235], fontSize: 8, fontStyle: 'bold', halign: 'center' },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        styles: { fontSize: 8, cellPadding: 3, valign: 'middle' },
+        columnStyles: { 
+          0: { cellWidth: 12, halign: 'center' }, 
+          1: { fontStyle: 'bold', cellWidth: 35 },
+          6: { fontStyle: 'bold' }
+        },
+        didDrawCell: (dataCell: any) => {
+          if (dataCell.section === 'body' && dataCell.column.index === 0) {
+            const country = tableDataForPDF[dataCell.row.index];
+            if (country.flagBase64) {
+              const x = dataCell.cell.x + 2;
+              const y = dataCell.cell.y + 1.5;
+              try { doc.addImage(country.flagBase64, 'PNG', x, y, 8, 5.2); } catch (e) {}
+            }
+          }
+        }
+      });
+
+      const totalPDFPages = (doc as any).internal.getNumberOfPages();
+      for(let i = 1; i <= totalPDFPages; i++) {
+        addPageDecorations(doc, i, totalPDFPages);
+      }
+
+      doc.save(`Professional_Geodetic_Report_${reportTitleSuffix.replace(/ \/ /g, '_').replace(/ /g, '_')}.pdf`);
+      
+    } catch (err) {
+      console.error('Error generating PDF report:', err);
+      alert('An error occurred during report generation.');
     }
   };
 
-  const filteredData = useMemo(() => {
-    return countries.filter(c => {
-      const matchesSearch = searchQuery === '' || 
-        c.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.itrf.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.currentNetwork && c.currentNetwork.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesItrf = filters.itrf === '' || c.itrf === filters.itrf;
-      const matchesStatus = filters.status === '' || c.status === filters.status;
-      const matchesCountry = filters.country === '' || c.country.toLowerCase().includes(filters.country.toLowerCase());
-      const matchesZone = filters.zone === '' || c.zone === filters.zone;
-
-      return matchesSearch && matchesItrf && matchesStatus && matchesCountry && matchesZone;
-    });
-  }, [searchQuery, countries, filters]);
+  const handleCountrySelect = (country: CountryData | null) => {
+    if (selectedCountry && country && selectedCountry.id === country.id) {
+      setSelectedCountry(null);
+    } else {
+      setSelectedCountry(country);
+      if (country && 'speechSynthesis' in window) {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(country.country);
+        const voices = window.speechSynthesis.getVoices();
+        
+        // Try to find an African English voice (South Africa, Nigeria, Kenya etc.)
+        const africanVoice = voices.find(v => 
+          v.lang.startsWith('en') && 
+          (v.lang.includes('ZA') || v.lang.includes('NG') || v.lang.includes('KE') || 
+           v.name.toLowerCase().includes('south africa') || v.name.toLowerCase().includes('nigeria') ||
+           v.name.toLowerCase().includes('kenya'))
+        );
+        
+        if (africanVoice) {
+          utterance.voice = africanVoice;
+        } else {
+          utterance.lang = 'en-US';
+        }
+        
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+  };
 
   const handleSaveCountry = () => {
     if (!editingCountry?.id || !editingCountry?.country) {
@@ -646,6 +903,15 @@ export default function App() {
                       <option value="CENTER">CENTER</option>
                     </select>
                   </div>
+
+                  <button 
+                    onClick={exportReportPDF}
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                  >
+                    <FileText size={14} className="sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Export Report (PDF)</span>
+                    <span className="sm:hidden">Report</span>
+                  </button>
                   
                   <button 
                     onClick={exportMapAsImage}
@@ -666,6 +932,8 @@ export default function App() {
                     setIsHeaderModalOpen={setIsHeaderModalOpen}
                     statusColors={statusColors}
                     setStatusColors={setStatusColors}
+                    mapRef={mapRef}
+                    africanGeoData={africanGeoData}
                   />
                 </div>
               </div>
@@ -827,7 +1095,7 @@ export default function App() {
                     Advanced Filters
                   </h3>
                   <button 
-                    onClick={() => setFilters({ itrf: '', status: '', country: '', zone: '' })}
+                    onClick={() => setFilters({ itrf: '', status: '', country: '', zone: '', epoch: '' })}
                     className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                   >
                     <RotateCcw size={14} />
@@ -892,6 +1160,20 @@ export default function App() {
                       <option value="EAST">EAST</option>
                       <option value="WEST">WEST</option>
                       <option value="CENTER">CENTER</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Epoch</label>
+                    <select 
+                      value={filters.epoch}
+                      onChange={(e) => setFilters({ ...filters, epoch: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    >
+                      <option value="">All Epochs</option>
+                      {Array.from(new Set(countries.map(c => c.epoch).filter(Boolean))).sort().map(epoch => (
+                        <option key={epoch} value={epoch}>{epoch}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1009,7 +1291,7 @@ export default function App() {
                     <p className="text-sm text-slate-500 mt-1">Refine the data displayed in the table and map</p>
                   </div>
                   <button 
-                    onClick={() => setFilters({ itrf: '', status: '', country: '', zone: '' })}
+                    onClick={() => setFilters({ itrf: '', status: '', country: '', zone: '', epoch: '' })}
                     className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                   >
                     <RotateCcw size={14} />
