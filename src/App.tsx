@@ -636,7 +636,7 @@ export default function App() {
       doc.text("INSTITUTION", 30, pageHeight - 55);
       doc.setTextColor(26, 26, 26);
       doc.setFont('helvetica', 'bold');
-      doc.text("UNIVERSITY IBA DER THIAM OF THIÈS (UIDT)", 30, pageHeight - 50);
+      doc.text("UNIVERSITY IBA DER THIAM OF THIES (UIDT)", 30, pageHeight - 50);
       doc.text("CIVIL ENGINEERING DEPARTMENT (UFR-SI)", 30, pageHeight - 45);
       
       doc.setFont('helvetica', 'normal');
