@@ -39,6 +39,7 @@ import { AFRICA_DATA, CountryData, TableHeaders } from './data';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import { AfricaIntro } from './components/AfricaIntro';
 import * as XLSX from 'xlsx';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -230,9 +231,9 @@ const AfricaMap = ({
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="absolute top-4 right-4 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg min-w-[180px] pointer-events-auto"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg min-w-[120px] sm:min-w-[180px] pointer-events-auto"
         >
-          <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1">
+          <div className="font-black mb-1 sm:mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1">
             Statistics
           </div>
           <table className="w-full">
@@ -247,17 +248,17 @@ const AfricaMap = ({
                 const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : '0.0';
                 return (
                   <tr key={item.status} className="group">
-                    <td className="py-1 flex items-center gap-1.5">
+                    <td className="py-0.5 sm:py-1 flex items-center gap-1 sm:gap-1.5">
                       <div 
-                        className="w-2 h-2 rounded-full shadow-sm" 
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shadow-sm" 
                         style={{ backgroundColor: statusColors[item.status] }} 
                       />
                       <span className="text-slate-600 truncate">{item.label}</span>
                     </td>
-                    <td className="py-1 text-right">
+                    <td className="py-0.5 sm:py-1 text-right">
                       <div className="flex flex-col items-end">
                         <span className="font-bold text-slate-900">{count}</span>
-                        <span className="text-[8px] text-slate-400 font-medium">{percentage}%</span>
+                        <span className="text-[7px] sm:text-[8px] text-slate-400 font-medium">{percentage}%</span>
                       </div>
                     </td>
                   </tr>
@@ -270,34 +271,36 @@ const AfricaMap = ({
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="absolute bottom-4 left-4 z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10px] text-slate-700 shadow-lg pointer-events-auto"
+          className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-20 flex flex-col gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg pointer-events-auto max-w-[140px] sm:max-w-none"
         >
-          <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-4">
+          <div className="font-black mb-1 sm:mb-1.5 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-2 sm:gap-4">
             <span>Legend</span>
-            <span className="text-[8px] text-slate-400 font-normal">Click color to edit</span>
+            <span className="text-[7px] sm:text-[8px] text-slate-400 font-normal hidden sm:inline">Click color to edit</span>
           </div>
-          {[
-            { label: 'ITRF with Epoch', status: 'COMPLETE' },
-            { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
-            { label: 'Missing Info', status: 'MISSING_INFO' },
-            { label: 'Local Network', status: 'LOCAL_NETWORK' }
-          ].map(item => (
-            <div key={item.status} className="flex items-center gap-2 group cursor-pointer relative">
-               <div className="relative w-3.5 h-3.5">
-                  <input 
-                    type="color" 
-                    value={statusColors[item.status]} 
-                    onChange={(e) => handleColorChange(item.status, e.target.value)}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div 
-                    className="absolute inset-0 rounded-full border border-white shadow-sm group-hover:scale-110 transition-transform" 
-                    style={{ backgroundColor: statusColors[item.status] }} 
-                  />
-               </div>
-               <span className="group-hover:text-indigo-600 transition-colors">{item.label}</span>
-            </div>
-          ))}
+          <div className="flex flex-col gap-1 sm:gap-1.5">
+            {[
+              { label: 'ITRF with Epoch', status: 'COMPLETE' },
+              { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
+              { label: 'Missing Info', status: 'MISSING_INFO' },
+              { label: 'Local Network', status: 'LOCAL_NETWORK' }
+            ].map(item => (
+              <div key={item.status} className="flex items-center gap-1.5 sm:gap-2 group cursor-pointer relative">
+                 <div className="relative w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0">
+                    <input 
+                      type="color" 
+                      value={statusColors[item.status]} 
+                      onChange={(e) => handleColorChange(item.status, e.target.value)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div 
+                      className="absolute inset-0 rounded-full border border-white shadow-sm group-hover:scale-110 transition-transform" 
+                      style={{ backgroundColor: statusColors[item.status] }} 
+                    />
+                 </div>
+                 <span className="group-hover:text-indigo-600 transition-colors truncate">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </div>
@@ -439,6 +442,7 @@ export default function App() {
     }
   };
 
+  const [showIntro, setShowIntro] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
   const [activeTab, setActiveTab] = useState<'map' | 'table' | 'filter' | 'sources'>('map');
   const [statusColors, setStatusColors] = useState<Record<string, string>>({
@@ -851,6 +855,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans selection:bg-blue-100">
+      <AnimatePresence>
+        {showIntro && (
+          <AfricaIntro onComplete={() => setShowIntro(false)} />
+        )}
+      </AnimatePresence>
       {/* Header */}
       <header className="border-b border-slate-100 bg-white/90 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
@@ -1117,18 +1126,18 @@ export default function App() {
               exit={{ opacity: 0, y: 20 }}
               className="space-y-6"
             >
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                    <BarChart3 size={20} className="text-indigo-600" />
+                  <h3 className="text-sm sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                    <BarChart3 size={16} className="text-indigo-600 sm:w-5 sm:h-5" />
                     Filtered Statistics
                   </h3>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  <div className="text-[8px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">
                     Based on {filteredData.length} countries
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                   {[
                     { label: 'ITRF with Epoch', status: 'COMPLETE' },
                     { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
@@ -1141,17 +1150,17 @@ export default function App() {
                     return (
                       <div 
                         key={item.status} 
-                        className="p-4 rounded-2xl border transition-all"
+                        className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all"
                         style={{ 
                           backgroundColor: `${color}15`, // Light opacity
                           borderColor: `${color}40`,
                           color: color === '#fde047' ? '#a16207' : color // Darker for yellow text
                         }}
                       >
-                        <div className="text-[10px] font-black uppercase tracking-wider mb-1 opacity-70">{item.label}</div>
-                        <div className="flex items-end gap-2">
-                          <span className="text-2xl font-black leading-none" style={{ color }}>{count}</span>
-                          <span className="text-xs font-bold opacity-60 mb-0.5">{percentage}%</span>
+                        <div className="text-[7px] sm:text-[10px] font-black uppercase tracking-wider mb-1 opacity-70 truncate">{item.label}</div>
+                        <div className="flex items-end gap-1 sm:gap-2">
+                          <span className="text-lg sm:text-2xl font-black leading-none" style={{ color }}>{count}</span>
+                          <span className="text-[8px] sm:text-xs font-bold opacity-60 mb-0.5">{percentage}%</span>
                         </div>
                       </div>
                     );
