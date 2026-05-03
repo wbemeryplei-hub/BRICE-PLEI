@@ -41,7 +41,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "CMR", country: "Cameroon", formerNetwork: "", currentNetwork: "National Geodetic Network (RGC11)", itrf: "ITRF 2008", epoch: "2011.5", status: "COMPLETE", zone: "CENTER" },
 
-  { id: "CPV", country: "Cape Verde", formerNetwork: "CVRS96 ITRF 1996", currentNetwork: "Fundamental Geodetic Network of Cape Verde (RGFCV)", itrf: "ITRF 1996", epoch: "1996", status: "COMPLETE", zone: "WEST" },
+  { id: "CPV", country: "Cape Verde", formerNetwork: "CVRS96 1996", currentNetwork: "Fundamental Geodetic Network of Cape Verde (RGFCV)", itrf: "ITRF 1996", epoch: "1996", status: "COMPLETE", zone: "WEST" },
 
   { id: "COM", country: "Comoros", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "NO_EPOCH", zone: "EAST" },
 
@@ -53,9 +53,9 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "EGY", country: "Egypt", formerNetwork: "EGN 80", currentNetwork: "NED95 (National Egyptian Datum 1995)", itrf: "ITRF 1993", epoch: "1998.1", status: "COMPLETE", zone: "NORTH" },
 
-  { id: "ERI", country: "Eritrea", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "ITRF", status: "NO_EPOCH", zone: "EAST" },
+  { id: "ERI", country: "Eritrea", formerNetwork: "", currentNetwork: "", itrf:"ITRF", epoch: "", status: "NO_EPOCH", zone: "EAST" },
 
-  { id: "SWZ", country: "Eswatini", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "ITRF", status: "NO_EPOCH", zone: "SOUTH" },
+  { id: "SWZ", country: "Eswatini", formerNetwork: "", currentNetwork: "", itrf:"ITRF", epoch: "", status: "NO_EPOCH", zone: "SOUTH" },
 
   { id: "ETH", country: "Ethiopia", formerNetwork: "", currentNetwork: "National Geodetic Network", itrf: "ITRF 2005", epoch: "2000", status: "COMPLETE", zone: "EAST" },
 
