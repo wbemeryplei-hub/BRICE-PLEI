@@ -872,6 +872,9 @@ export default function App() {
               >
                 PRT M2 - DYNAMICS OF GEODETIC REFERENCE FRAMES IN AFRICA
               </motion.h1>
+              <div className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-[0.2em] mt-1">
+                Interactive Dashboard
+              </div>
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
