@@ -29,13 +29,13 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "DZA", country: "Algeria", formerNetwork: "North Sahara Geodetic System 1959", currentNetwork: "Atlas Geodetic Network (REGAT)", itrf: "ITRF 2014", epoch: "2010", status: "COMPLETE", zone: "NORTH" },
 
-  { id: "AGO", country: "Angola", formerNetwork: "", currentNetwork: "(RGNA) (or Active National Geodetic Network)", itrf: "ITRF 2008", epoch: "2010", status: "COMPLETE", zone: "SOUTH" },
+  { id: "AGO", country: "Angola", formerNetwork: "", currentNetwork: "RGNA (Active National Geodetic Network)", itrf: "ITRF 2008", epoch: "2010", status: "COMPLETE", zone: "SOUTH" },
 
   { id: "BEN", country: "Benin", formerNetwork: "RGB ITRF 1993 @95.9", currentNetwork: "RSPB CORS", itrf: "ITRF 2000", epoch: "1997", status: "COMPLETE", zone: "WEST" },
 
   { id: "BWA", country: "Botswana", formerNetwork: "BTRS (Botswana Terrestrial Reference Sys", currentNetwork: "BNGRS02 (Botswana National Geodetic Reference System 2002)", itrf: "ITRF 2000", epoch: "2002", status: "COMPLETE", zone: "SOUTH" },
 
-  { id: "BFA", country: "Burkina Faso", formerNetwork: "adindan point 58/network 1/network 2", currentNetwork: "BF-CORS", itrf: "ITRF 2008", epoch: "2011.7205", status: "COMPLETE", zone: "WEST" },
+  { id: "BFA", country: "Burkina Faso", formerNetwork: "adindan point 58", currentNetwork: "BF-CORS", itrf: "ITRF 2008", epoch: "2011.7205", status: "COMPLETE", zone: "WEST" },
 
   { id: "BDI", country: "Burundi", formerNetwork: "Arc 1960", currentNetwork: "", itrf: "", epoch: "", status: "MISSING_INFO", zone: "EAST" },
 
@@ -47,15 +47,15 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "COG", country: "Congo-Brazzaville", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "NO_EPOCH", zone: "CENTER" },
 
-  { id: "CIV", country: "Ivory Coast", formerNetwork: "RGCI ITRF 1996@1998.2", currentNetwork: "RGCI 2022", itrf: "ITRF 2014", epoch: "2010", status: "COMPLETE", zone: "WEST" },
+  { id: "CIV", country: "Ivory Coast", formerNetwork: "RGCI 1996@1998.2", currentNetwork: "RGCI 2022", itrf: "ITRF 2014", epoch: "2010", status: "COMPLETE", zone: "WEST" },
 
   { id: "DJI", country: "Djibouti", formerNetwork: "Ghoubbet-Asal (IGN 1973)", currentNetwork: "Djibouti Geodetic Network", itrf: "ITRF 2005", epoch: "2012.27", status: "COMPLETE", zone: "EAST" },
 
   { id: "EGY", country: "Egypt", formerNetwork: "EGN 80", currentNetwork: "NED95 (National Egyptian Datum 1995)", itrf: "ITRF 1993", epoch: "1998.1", status: "COMPLETE", zone: "NORTH" },
 
-  { id: "ERI", country: "Eritrea", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "NO_EPOCH", zone: "EAST" },
+  { id: "ERI", country: "Eritrea", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "ITRF", status: "NO_EPOCH", zone: "EAST" },
 
-  { id: "SWZ", country: "Eswatini", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "NO_EPOCH", zone: "SOUTH" },
+  { id: "SWZ", country: "Eswatini", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "ITRF", status: "NO_EPOCH", zone: "SOUTH" },
 
   { id: "ETH", country: "Ethiopia", formerNetwork: "", currentNetwork: "National Geodetic Network", itrf: "ITRF 2005", epoch: "2000", status: "COMPLETE", zone: "EAST" },
 
@@ -73,7 +73,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "KEN", country: "Kenya", formerNetwork: "Kenya Absolute Reference System KARS96", currentNetwork: "KENREF (Kenya Geodetic Reference Frame)", itrf: "ITRF 2014", epoch: "2015", status: "COMPLETE", zone: "EAST" },
 
-  { id: "LSO", country: "Lesotho", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "NO_EPOCH", zone: "SOUTH" },
+  { id: "LSO", country: "Lesotho", formerNetwork: "", currentNetwork: "", itrf: "ITRF", epoch: "", status: "NO_EPOCH", zone: "SOUTH" },
 
   { id: "LBR", country: "Liberia", formerNetwork: "", currentNetwork: "Liberia Geodetic Reference frame (LGR)", itrf: "ITRF", epoch: "", status: "NO_EPOCH", zone: "WEST" },
 
@@ -111,7 +111,7 @@ export const AFRICA_DATA: CountryData[] = [
 
   { id: "STP", country: "Sao Tome and Principe", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "MISSING_INFO", zone: "CENTER" },
 
-  { id: "SEN", country: "Senegal", formerNetwork: "ASECNA ITRF 1996@98.5", currentNetwork: "RRS04", itrf: "ITRF 2000", epoch: "2004.56", status: "COMPLETE", zone: "WEST" },
+  { id: "SEN", country: "Senegal", formerNetwork: "ASECNA 1996@98.5", currentNetwork: "RRS04", itrf: "ITRF 2000", epoch: "2004.56", status: "COMPLETE", zone: "WEST" },
 
   { id: "SYC", country: "Seychelles", formerNetwork: "", currentNetwork: "", itrf: "", epoch: "", status: "MISSING_INFO", zone: "EAST" },
 
