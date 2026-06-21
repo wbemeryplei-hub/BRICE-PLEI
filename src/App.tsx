@@ -36,6 +36,7 @@ import ReactMarkdown from 'react-markdown';
 import { MapContainer, TileLayer, GeoJSON, Tooltip, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
+import { ChatBot } from './components/ChatBot';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -95,6 +96,9 @@ const AfricaMap = ({
   mapRef: React.MutableRefObject<L.Map | null>;
   africanGeoData: any;
 }) => {
+  const [showStats, setShowStats] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
+
   const getStyle = (feature: any) => {
     const id = feature.id;
     const country = data.find(c => c.id === id);
@@ -227,81 +231,152 @@ const AfricaMap = ({
           })}
         </MapContainer>
         
-        {/* Statistics and Legend can remain as overlays */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg min-w-[120px] sm:min-w-[180px] pointer-events-auto"
-        >
-          <div className="font-black mb-1 sm:mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1">
-            Statistics
-          </div>
-          <table className="w-full">
-            <tbody className="divide-y divide-slate-50">
-              {[
-                { label: 'ITRF with Epoch', status: 'COMPLETE' },
-                { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
-                { label: 'Missing Info', status: 'MISSING_INFO' },
-                { label: 'Local Network', status: 'LOCAL_NETWORK' }
-              ].map((item) => {
-                const count = data.filter(c => c.status === item.status).length;
-                const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : '0.0';
-                return (
-                  <tr key={item.status} className="group">
-                    <td className="py-0.5 sm:py-1 flex items-center gap-1 sm:gap-1.5">
-                      <div 
-                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shadow-sm" 
-                        style={{ backgroundColor: statusColors[item.status] }} 
-                      />
-                      <span className="text-slate-600 truncate">{item.label}</span>
-                    </td>
-                    <td className="py-0.5 sm:py-1 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="font-bold text-slate-900">{count}</span>
-                        <span className="text-[7px] sm:text-[8px] text-slate-400 font-medium">{percentage}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </motion.div>
+        {/* Mobile floating controls and mobile drawer toggles */}
+        <div className="absolute top-2 left-2 z-[400] flex gap-1.5 lg:hidden">
+          <button 
+            type="button"
+            onClick={(e) => { 
+              e.stopPropagation();
+              setShowStats(!showStats); 
+              setShowLegend(false); 
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 shadow-md transition-all active:scale-95 border",
+              showStats 
+                ? "bg-indigo-600 border-indigo-600 text-white" 
+                : "bg-white/95 backdrop-blur-sm border-slate-200 text-slate-700 hover:bg-slate-50"
+            )}
+          >
+            <BarChart3 size={13} />
+            Stats
+          </button>
+          <button 
+            type="button"
+            onClick={(e) => { 
+              e.stopPropagation();
+              setShowLegend(!showLegend); 
+              setShowStats(false); 
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 shadow-md transition-all active:scale-95 border",
+              showLegend 
+                ? "bg-indigo-600 border-indigo-600 text-white" 
+                : "bg-white/95 backdrop-blur-sm border-slate-200 text-slate-700 hover:bg-slate-50"
+            )}
+          >
+            <Filter size={13} />
+            Legend
+          </button>
+        </div>
 
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-20 flex flex-col gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md p-2 sm:p-3 rounded-xl border border-slate-200 text-[8px] sm:text-[10px] text-slate-700 shadow-lg pointer-events-auto max-w-[140px] sm:max-w-none"
-        >
-          <div className="font-black mb-1 sm:mb-1.5 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-2 sm:gap-4">
-            <span>Legend</span>
-            <span className="text-[7px] sm:text-[8px] text-slate-400 font-normal hidden sm:inline">Click color to edit</span>
-          </div>
-          <div className="flex flex-col gap-1 sm:gap-1.5">
-            {[
-              { label: 'ITRF with Epoch', status: 'COMPLETE' },
-              { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
-              { label: 'Missing Info', status: 'MISSING_INFO' },
-              { label: 'Local Network', status: 'LOCAL_NETWORK' }
-            ].map(item => (
-              <div key={item.status} className="flex items-center gap-1.5 sm:gap-2 group cursor-pointer relative">
-                 <div className="relative w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0">
-                    <input 
-                      type="color" 
-                      value={statusColors[item.status]} 
-                      onChange={(e) => handleColorChange(item.status, e.target.value)}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div 
-                      className="absolute inset-0 rounded-full border border-white shadow-sm group-hover:scale-110 transition-transform" 
-                      style={{ backgroundColor: statusColors[item.status] }} 
-                    />
-                 </div>
-                 <span className="group-hover:text-indigo-600 transition-colors truncate">{item.label}</span>
+        {/* Statistics Overlay */}
+        <AnimatePresence>
+          {(showStats || true) && (
+            <motion.div 
+              initial={false}
+              className={cn(
+                "bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-slate-200 text-[10px] text-slate-700 shadow-xl pointer-events-auto transition-all duration-200 z-[450]",
+                "lg:absolute lg:top-4 lg:right-4 lg:w-48 lg:shadow-lg lg:z-20 lg:block", // Desktop: absolute, top-4 right-4, visible
+                "fixed inset-x-4 bottom-22 w-auto max-h-[50vh] overflow-y-auto lg:inset-auto", // Mobile: fixed at bottom, full-width margin
+                showStats ? "block" : "hidden lg:block" // Toggle visibility on mobile
+              )}
+            >
+              <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider border-b border-indigo-100 pb-1 flex justify-between items-center">
+                <span>Statistics</span>
+                <button 
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowStats(false); }} 
+                  className="lg:hidden p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                >
+                  <X size={14} />
+                </button>
               </div>
-            ))}
-          </div>
-        </motion.div>
+              <table className="w-full">
+                <tbody className="divide-y divide-slate-50">
+                  {[
+                    { label: 'ITRF with Epoch', status: 'COMPLETE' },
+                    { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
+                    { label: 'Missing Info', status: 'MISSING_INFO' },
+                    { label: 'Local Network', status: 'LOCAL_NETWORK' }
+                  ].map((item) => {
+                    const count = data.filter(c => c.status === item.status).length;
+                    const percentage = data.length > 0 ? ((count / data.length) * 100).toFixed(1) : '0.0';
+                    return (
+                      <tr key={item.status} className="group">
+                        <td className="py-1 flex items-center gap-1.5">
+                          <div 
+                            className="w-2 h-2 rounded-full shadow-sm" 
+                            style={{ backgroundColor: statusColors[item.status] }} 
+                          />
+                          <span className="text-slate-600 truncate">{item.label}</span>
+                        </td>
+                        <td className="py-1 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-bold text-slate-900">{count}</span>
+                            <span className="text-[8px] text-slate-400 font-medium">{percentage}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Legend Overlay */}
+        <AnimatePresence>
+          {(showLegend || true) && (
+            <motion.div 
+              initial={false}
+              className={cn(
+                "bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-slate-200 text-[10px] text-slate-700 shadow-xl pointer-events-auto transition-all duration-200 z-[450]",
+                "lg:absolute lg:bottom-4 lg:left-4 lg:shadow-lg lg:z-20 lg:block lg:min-w-[180px]", // Desktop
+                "fixed inset-x-4 bottom-22 w-auto max-h-[50vh] overflow-y-auto lg:inset-auto", // Mobile
+                showLegend ? "block" : "hidden lg:block" // Toggle visibility on mobile
+              )}
+            >
+              <div className="font-black mb-1.5 text-indigo-900 uppercase tracking-wider flex items-center justify-between gap-4 border-b border-indigo-100 pb-1">
+                <span>Legend</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] text-slate-400 font-normal hidden sm:inline">Click color to edit</span>
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowLegend(false); }} 
+                    className="lg:hidden p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5 mt-1">
+                {[
+                  { label: 'ITRF with Epoch', status: 'COMPLETE' },
+                  { label: 'ITRF without Epoch', status: 'NO_EPOCH' },
+                  { label: 'Missing Info', status: 'MISSING_INFO' },
+                  { label: 'Local Network', status: 'LOCAL_NETWORK' }
+                ].map(item => (
+                  <div key={item.status} className="flex items-center gap-2 group cursor-pointer relative py-0.5">
+                     <div className="relative w-3.5 h-3.5 shrink-0">
+                        <input 
+                          type="color" 
+                          value={statusColors[item.status]} 
+                          onChange={(e) => handleColorChange(item.status, e.target.value)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <div 
+                          className="absolute inset-0 rounded-full border border-white shadow-sm group-hover:scale-110 transition-transform" 
+                          style={{ backgroundColor: statusColors[item.status] }} 
+                        />
+                     </div>
+                     <span className="group-hover:text-indigo-600 transition-colors truncate">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -781,6 +856,17 @@ export default function App() {
       setSelectedCountry(null);
     } else {
       setSelectedCountry(country);
+      
+      // Auto-scroll to details section on mobile viewports
+      if (country && window.innerWidth < 1024) {
+        setTimeout(() => {
+          const el = document.getElementById('country-details');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 120);
+      }
+
       if (country && 'speechSynthesis' in window) {
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
@@ -968,7 +1054,7 @@ export default function App() {
               className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 lg:h-[calc(100vh-180px)]"
             >
               {/* Map Section */}
-              <div className="lg:col-span-2 flex flex-col gap-4 h-[500px] sm:h-[600px] lg:h-full">
+              <div className="lg:col-span-2 flex flex-col gap-4 h-[380px] sm:h-[500px] lg:h-full">
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
                     <Filter size={14} className="text-indigo-600" />
@@ -1022,7 +1108,7 @@ export default function App() {
               </div>
 
               {/* Info Panel */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div id="country-details" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                   <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                     <Info size={18} className="text-indigo-600" />
@@ -1842,6 +1928,7 @@ export default function App() {
         <p>© 2026 DYNAMIC GEODETIC REFERENCE FRAMES IN AFRICA</p>
         <p className="mt-1">Interactive visualization of continental geodetic data</p>
       </footer>
+      <ChatBot />
     </div>
   );
 }
