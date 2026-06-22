@@ -36,7 +36,6 @@ import ReactMarkdown from 'react-markdown';
 import { MapContainer, TileLayer, GeoJSON, Tooltip, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { AFRICA_DATA, CountryData, TableHeaders } from './data';
-import { ChatBot } from './components/ChatBot';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -1844,7 +1843,6 @@ export default function App() {
         <p>© 2026 DYNAMIC GEODETIC REFERENCE FRAMES IN AFRICA</p>
         <p className="mt-1">Interactive visualization of continental geodetic data</p>
       </footer>
-      <ChatBot />
     </div>
   );
 }
